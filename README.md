@@ -24,14 +24,19 @@ Here's a quick example to get you started:
 
 ```python
 from frequenz.client.dispatch import Client
+import asyncio
 
-# Initialize the client
-client = Client(key="your_api_key", server_url="grpc://fz-0004.frequenz.io")
+async def print_dispatches():
+    # Initialize the client
+    client = Client(key="your_api_key", server_url="grpc://fz-0004.frequenz.io")
 
-# List all dispatches for a specific microgrid
-async for page in client.list(microgrid_id=1):
-    for dispatch in page:
-        print(dispatch)
+    # List all dispatches for a specific microgrid
+    async for page in client.list(microgrid_id=1):
+        for dispatch in page:
+            print(dispatch)
+
+# Run the Example
+asyncio.run(print_dispatches())
 ```
 
 For detailed usage and advanced features, check out the [client documentation](https://frequenz-floss.github.io/frequenz-client-dispatch-python/latest/reference/frequenz/client/dispatch/#frequenz.client.dispatch.Client).

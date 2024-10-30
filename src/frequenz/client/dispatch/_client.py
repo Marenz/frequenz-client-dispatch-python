@@ -249,9 +249,6 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
     ) -> Dispatch:
         """Create a dispatch.
 
-        Will try to return the created dispatch, identifying it by
-        the same fields as the request.
-
         Args:
             microgrid_id: The microgrid_id to create the dispatch for.
             type: User defined string to identify the dispatch type.
