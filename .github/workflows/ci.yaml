@@ -61,6 +61,17 @@ jobs:
           python -m pip install -e .[dev-noxfile]
           pip freeze
 
+      # Restore pytest cache only for pytest_min session to use the cache
+      - name: Restore pytest cache
+        if: ${{ matrix.nox-session == 'pytest_min' }}
+        uses: actions/cache/restore@v4
+        id: restore-pytest-cache
+        with:
+          path: .pytest_cache
+          key: ${{ runner.os }}-pytest-cache-${{ matrix.os }}-${{ matrix.python }}-${{ github.ref_name }}-no-cache
+          restore-keys: |
+            ${{ runner.os }}-pytest-cache-${{ matrix.os }}-${{ matrix.python }}-${{ github.ref_name }}-
+
       - name: Create nox venv
         env:
           NOX_SESSION: ${{ matrix.nox-session }}
@@ -74,11 +85,25 @@ jobs:
           pip freeze
           deactivate
 
+      # Run nox session
       - name: Run nox
         env:
           NOX_SESSION: ${{ matrix.nox-session }}
-        run: nox -R -e "$NOX_SESSION"
+        run: |
+          if [ "$NOX_SESSION" = "pytest_min" ]; then
+            nox -R -e "$NOX_SESSION" -- --ff -o cache_dir=.pytest_cache
+          else
+            nox -R -e "$NOX_SESSION"
+          fi
         timeout-minutes: 10
+
+      # Save pytest cache only for pytest_min session
+      - name: Save pytest cache
+        if: always() && matrix.nox-session == 'pytest_min'
+        uses: actions/cache/save@v4
+        with:
+          path: .pytest_cache
+          key: ${{ runner.os }}-pytest-cache-${{ matrix.os }}-${{ matrix.python }}-${{ github.ref_name }}-${{ github.run_number }}
 
   # This job runs if all the `nox` matrix jobs ran and succeeded.
   # It is only used to have a single job that we can require in branch
