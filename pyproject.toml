@@ -80,6 +80,7 @@ dev-mypy = [
   "frequenz-client-dispatch[cli,dev-mkdocs,dev-noxfile,dev-pytest]",
   "grpc-stubs == 1.53.0.5",
   "types-protobuf == 5.28.3.20241030",
+  "types-python-dateutil == 2.9.0.20241003",
 ]
 dev-noxfile = ["nox == 2024.10.9", "frequenz-repo-config[lib] == 0.10.0"]
 dev-pylint = [

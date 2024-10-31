@@ -42,6 +42,27 @@ class Frequency(IntEnum):
     YEARLY = PBRecurrenceRule.FREQUENCY_YEARLY
 
 
+_RRULE_FREQ_MAP = {
+    Frequency.MINUTELY: rrule.MINUTELY,
+    Frequency.HOURLY: rrule.HOURLY,
+    Frequency.DAILY: rrule.DAILY,
+    Frequency.WEEKLY: rrule.WEEKLY,
+    Frequency.MONTHLY: rrule.MONTHLY,
+}
+"""To map from our Frequency enum to the dateutil library enum."""
+
+_RRULE_WEEKDAY_MAP = {
+    Weekday.MONDAY: rrule.MO,
+    Weekday.TUESDAY: rrule.TU,
+    Weekday.WEDNESDAY: rrule.WE,
+    Weekday.THURSDAY: rrule.TH,
+    Weekday.FRIDAY: rrule.FR,
+    Weekday.SATURDAY: rrule.SA,
+    Weekday.SUNDAY: rrule.SU,
+}
+"""To map from our Weekday enum to the dateutil library enum."""
+
+
 @dataclass(kw_only=True)
 class EndCriteria:
     """Controls when a recurring dispatch should end."""
@@ -164,3 +185,39 @@ class RecurrenceRule:
         pb_rule.bymonths.extend(self.bymonths)
 
         return pb_rule
+
+    def prepare(self, start_time: datetime) -> rrule.rrule:
+        """Prepare the rrule object.
+
+        Args:
+            start_time: The start time of the dispatch.
+
+        Returns:
+            The rrule object.
+
+        Raises:
+            ValueError: If the interval is 0.
+        """
+        if self.interval == 0:
+            raise ValueError("Interval must be greater than 0")
+
+        count, until = (None, None)
+        if end := self.end_criteria:
+            count = end.count
+            until = end.until
+
+        rrule_obj = rrule.rrule(
+            freq=_RRULE_FREQ_MAP[self.frequency],
+            dtstart=start_time,
+            count=count,
+            until=until,
+            byminute=self.byminutes or None,
+            byhour=self.byhours or None,
+            byweekday=[_RRULE_WEEKDAY_MAP[weekday] for weekday in self.byweekdays]
+            or None,
+            bymonthday=self.bymonthdays or None,
+            bymonth=self.bymonths or None,
+            interval=self.interval,
+        )
+
+        return rrule_obj
