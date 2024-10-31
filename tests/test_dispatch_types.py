@@ -15,8 +15,8 @@ from frequenz.client.dispatch.recurrence import (
 )
 from frequenz.client.dispatch.types import (
     Dispatch,
-    component_selector_from_protobuf,
-    component_selector_to_protobuf,
+    _component_selector_from_protobuf,
+    _component_selector_to_protobuf,
 )
 
 
@@ -30,8 +30,8 @@ def test_component_selector() -> None:
         [ComponentCategory.METER],
         [ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY],
     ):
-        protobuf = component_selector_to_protobuf(selector)
-        assert component_selector_from_protobuf(protobuf) == selector
+        protobuf = _component_selector_to_protobuf(selector)
+        assert _component_selector_from_protobuf(protobuf) == selector
 
 
 def test_end_criteria() -> None:

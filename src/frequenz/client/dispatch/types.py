@@ -36,7 +36,7 @@ A component selector can be a list of component IDs or a list of categories.
 """
 
 
-def component_selector_from_protobuf(
+def _component_selector_from_protobuf(
     pb_selector: PBComponentSelector,
 ) -> ComponentSelector:
     """Convert a protobuf component selector to a component selector.
@@ -66,7 +66,7 @@ def component_selector_from_protobuf(
             raise ValueError("Invalid component selector")
 
 
-def component_selector_to_protobuf(
+def _component_selector_to_protobuf(
     selector: ComponentSelector,
 ) -> PBComponentSelector:
     """Convert a component selector to a protobuf component selector.
@@ -181,7 +181,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 if pb_object.data.duration
                 else None
             ),
-            selector=component_selector_from_protobuf(pb_object.data.selector),
+            selector=_component_selector_from_protobuf(pb_object.data.selector),
             active=pb_object.data.is_active,
             dry_run=pb_object.data.is_dry_run,
             payload=MessageToDict(pb_object.data.payload),
@@ -209,7 +209,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
-                selector=component_selector_to_protobuf(self.selector),
+                selector=_component_selector_to_protobuf(self.selector),
                 is_active=self.active,
                 is_dry_run=self.dry_run,
                 payload=payload,

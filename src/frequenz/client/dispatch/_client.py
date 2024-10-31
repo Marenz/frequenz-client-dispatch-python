@@ -45,7 +45,7 @@ from .types import (
     ComponentSelector,
     Dispatch,
     DispatchEvent,
-    component_selector_to_protobuf,
+    _component_selector_to_protobuf,
 )
 
 # pylint: enable=no-name-in-module
@@ -166,7 +166,7 @@ class Client(BaseApiClient):
         # Setup parameters
         start_time_interval = to_interval(start_from, start_to)
         end_time_interval = to_interval(end_from, end_to)
-        selectors = list(map(component_selector_to_protobuf, component_selectors))
+        selectors = list(map(_component_selector_to_protobuf, component_selectors))
         filters = DispatchFilter(
             selectors=selectors,
             start_time_interval=start_time_interval,
@@ -354,7 +354,7 @@ class Client(BaseApiClient):
                     else:
                         msg.update.duration = round(val.total_seconds())
                 case "selector":
-                    msg.update.selector.CopyFrom(component_selector_to_protobuf(val))
+                    msg.update.selector.CopyFrom(_component_selector_to_protobuf(val))
                 case "is_active":
                     msg.update.is_active = val
                 case "payload":
