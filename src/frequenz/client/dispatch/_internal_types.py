@@ -18,9 +18,9 @@ from google.protobuf.struct_pb2 import Struct
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
 
+from .recurrence import RecurrenceRule
 from .types import (
     ComponentSelector,
-    RecurrenceRule,
     component_selector_from_protobuf,
     component_selector_to_protobuf,
 )

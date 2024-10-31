@@ -40,11 +40,11 @@ from frequenz.client.base.retry import LinearBackoff
 from frequenz.client.base.streaming import GrpcStreamBroadcaster
 
 from ._internal_types import DispatchCreateRequest
+from .recurrence import RecurrenceRule
 from .types import (
     ComponentSelector,
     Dispatch,
     DispatchEvent,
-    RecurrenceRule,
     component_selector_to_protobuf,
 )
 

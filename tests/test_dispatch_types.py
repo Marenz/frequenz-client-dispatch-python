@@ -7,12 +7,14 @@ from datetime import datetime, timedelta, timezone
 
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch._internal_types import DispatchCreateRequest
-from frequenz.client.dispatch.types import (
-    Dispatch,
+from frequenz.client.dispatch.recurrence import (
     EndCriteria,
     Frequency,
     RecurrenceRule,
     Weekday,
+)
+from frequenz.client.dispatch.types import (
+    Dispatch,
     component_selector_from_protobuf,
     component_selector_to_protobuf,
 )

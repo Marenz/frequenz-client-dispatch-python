@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 from frequenz.client.common.microgrid.components import ComponentCategory
 
 from .._internal_types import rounded_start_time
-from ..types import Dispatch, EndCriteria, Frequency, RecurrenceRule, Weekday
+from ..recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
+from ..types import Dispatch
 
 
 class DispatchGenerator:

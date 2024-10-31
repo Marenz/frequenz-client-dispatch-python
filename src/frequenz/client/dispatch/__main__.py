@@ -16,7 +16,7 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import CompleteStyle
 
-from frequenz.client.dispatch.types import (
+from frequenz.client.dispatch.recurrence import (
     EndCriteria,
     Frequency,
     RecurrenceRule,
