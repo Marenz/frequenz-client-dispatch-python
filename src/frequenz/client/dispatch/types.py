@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import Any, cast
 
 # pylint: disable=no-name-in-module
@@ -115,19 +115,6 @@ class TimeIntervalFilter:
     """Filter by end_time < end_to."""
 
 
-class RunningState(Enum):
-    """The running state of a dispatch."""
-
-    RUNNING = "RUNNING"
-    """The dispatch is running."""
-
-    STOPPED = "STOPPED"
-    """The dispatch is stopped."""
-
-    DIFFERENT_TYPE = "DIFFERENT_TYPE"
-    """The dispatch is for a different type."""
-
-
 @dataclass(kw_only=True, frozen=True)
 class Dispatch:  # pylint: disable=too-many-instance-attributes
     """Represents a dispatch operation within a microgrid system."""
@@ -173,36 +160,33 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
     update_time: datetime
     """The last update time of the dispatch in UTC. Set when a dispatch is modified."""
 
-    def running(self, type_: str) -> RunningState:
-        """Check if the dispatch is currently supposed to be running.
+    @property
+    def started(self) -> bool:
+        """Check if the dispatch has started.
 
-        Args:
-            type_: The type of the dispatch that should be running.
+        A dispatch is considered started if the current time is after the start
+        time but before the end time.
 
-        Returns:
-            RUNNING if the dispatch is running,
-            STOPPED if it is stopped,
-            DIFFERENT_TYPE if it is for a different type.
+        Recurring dispatches are considered started if the current time is after
+        the start time of the last occurrence but before the end time of the
+        last occurrence.
         """
-        if self.type != type_:
-            return RunningState.DIFFERENT_TYPE
-
         if not self.active:
-            return RunningState.STOPPED
+            return False
 
         now = datetime.now(tz=timezone.utc)
 
         if now < self.start_time:
-            return RunningState.STOPPED
+            return False
 
         # A dispatch without duration is always running, once it started
         if self.duration is None:
-            return RunningState.RUNNING
+            return True
 
         if until := self._until(now):
-            return RunningState.RUNNING if now < until else RunningState.STOPPED
+            return now < until
 
-        return RunningState.STOPPED
+        return False
 
     @property
     def until(self) -> datetime | None:

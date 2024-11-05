@@ -11,7 +11,7 @@ import time_machine
 
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch.recurrence import Frequency, RecurrenceRule, Weekday
-from frequenz.client.dispatch.types import Dispatch, RunningState
+from frequenz.client.dispatch.types import Dispatch
 
 # Define a fixed current time for testing to avoid issues with datetime.now()
 CURRENT_TIME = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -37,84 +37,62 @@ def dispatch_base() -> Dispatch:
 
 @time_machine.travel(CURRENT_TIME)
 @pytest.mark.parametrize(
-    "dispatch_type, requested_type, active, start_time_offset, duration, expected_state",
+    "active, start_time_offset, duration, expected_state",
     [
-        # Dispatch type does not match the requested type
-        (
-            "TypeA",
-            "TypeB",
-            True,
-            timedelta(minutes=-10),
-            timedelta(minutes=20),
-            RunningState.DIFFERENT_TYPE,
-        ),
         # Dispatch is inactive
         (
-            "TypeA1",
-            "TypeA1",
             False,
             timedelta(minutes=-10),
             timedelta(minutes=20),
-            RunningState.STOPPED,
+            False,
         ),
         # Current time is before the start time
         (
-            "TypeA2",
-            "TypeA2",
             True,
             timedelta(minutes=10),
             timedelta(minutes=20),
-            RunningState.STOPPED,
+            False,
         ),
         # Dispatch with infinite duration
         (
-            "TypeA3",
-            "TypeA3",
             True,
             timedelta(minutes=-10),
             None,
-            RunningState.RUNNING,
+            True,
         ),
         # Dispatch is currently running
         (
-            "TypeA4",
-            "TypeA4",
             True,
             timedelta(minutes=-10),
             timedelta(minutes=20),
-            RunningState.RUNNING,
+            True,
         ),
         # Dispatch duration has passed
         (
-            "TypeA5",
-            "TypeA5",
             True,
             timedelta(minutes=-30),
             timedelta(minutes=20),
-            RunningState.STOPPED,
+            False,
         ),
     ],
 )
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 def test_dispatch_running(
     dispatch_base: Dispatch,
-    dispatch_type: str,
-    requested_type: str,
     active: bool,
     start_time_offset: timedelta,
     duration: timedelta | None,
-    expected_state: RunningState,
+    expected_state: bool,
 ) -> None:
     """Test the running method of the Dispatch class."""
     dispatch = replace(
         dispatch_base,
-        type=dispatch_type,
         start_time=CURRENT_TIME + start_time_offset,
         duration=duration,
         active=active,
     )
 
-    assert dispatch.running(requested_type) == expected_state
+    assert dispatch.started == expected_state
 
 
 @time_machine.travel(CURRENT_TIME)
