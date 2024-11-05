@@ -5,8 +5,8 @@
 
 
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from enum import IntEnum
+from datetime import datetime, timedelta, timezone
+from enum import Enum, IntEnum
 from typing import Any, cast
 
 # pylint: disable=no-name-in-module
@@ -27,7 +27,7 @@ from frequenz.client.base.conversion import to_datetime, to_timestamp
 # pylint: enable=no-name-in-module
 from frequenz.client.common.microgrid.components import ComponentCategory
 
-from .recurrence import RecurrenceRule
+from .recurrence import Frequency, RecurrenceRule, Weekday
 
 ComponentSelector = list[int] | list[ComponentCategory]
 """A component selector specifying which components a dispatch targets.
@@ -115,6 +115,19 @@ class TimeIntervalFilter:
     """Filter by end_time < end_to."""
 
 
+class RunningState(Enum):
+    """The running state of a dispatch."""
+
+    RUNNING = "RUNNING"
+    """The dispatch is running."""
+
+    STOPPED = "STOPPED"
+    """The dispatch is stopped."""
+
+    DIFFERENT_TYPE = "DIFFERENT_TYPE"
+    """The dispatch is for a different type."""
+
+
 @dataclass(kw_only=True, frozen=True)
 class Dispatch:  # pylint: disable=too-many-instance-attributes
     """Represents a dispatch operation within a microgrid system."""
@@ -159,6 +172,122 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
 
     update_time: datetime
     """The last update time of the dispatch in UTC. Set when a dispatch is modified."""
+
+    def running(self, type_: str) -> RunningState:
+        """Check if the dispatch is currently supposed to be running.
+
+        Args:
+            type_: The type of the dispatch that should be running.
+
+        Returns:
+            RUNNING if the dispatch is running,
+            STOPPED if it is stopped,
+            DIFFERENT_TYPE if it is for a different type.
+        """
+        if self.type != type_:
+            return RunningState.DIFFERENT_TYPE
+
+        if not self.active:
+            return RunningState.STOPPED
+
+        now = datetime.now(tz=timezone.utc)
+
+        if now < self.start_time:
+            return RunningState.STOPPED
+
+        # A dispatch without duration is always running, once it started
+        if self.duration is None:
+            return RunningState.RUNNING
+
+        if until := self._until(now):
+            return RunningState.RUNNING if now < until else RunningState.STOPPED
+
+        return RunningState.STOPPED
+
+    @property
+    def until(self) -> datetime | None:
+        """Time when the dispatch should end.
+
+        Returns the time that a running dispatch should end.
+        If the dispatch is not running, None is returned.
+
+        Returns:
+            The time when the dispatch should end or None if the dispatch is not running.
+        """
+        if not self.active:
+            return None
+
+        now = datetime.now(tz=timezone.utc)
+        return self._until(now)
+
+    @property
+    def next_run(self) -> datetime | None:
+        """Calculate the next run of a dispatch.
+
+        Returns:
+            The next run of the dispatch or None if the dispatch is finished.
+        """
+        return self.next_run_after(datetime.now(tz=timezone.utc))
+
+    def next_run_after(self, after: datetime) -> datetime | None:
+        """Calculate the next run of a dispatch.
+
+        Args:
+            after: The time to calculate the next run from.
+
+        Returns:
+            The next run of the dispatch or None if the dispatch is finished.
+        """
+        if (
+            not self.recurrence.frequency
+            or self.recurrence.frequency == Frequency.UNSPECIFIED
+            or self.duration is None  # Infinite duration
+        ):
+            if after > self.start_time:
+                return None
+            return self.start_time
+
+        # Make sure no weekday is UNSPECIFIED
+        if Weekday.UNSPECIFIED in self.recurrence.byweekdays:
+            return None
+
+        # No type information for rrule, so we need to cast
+        return cast(
+            datetime | None,
+            self.recurrence.prepare(self.start_time).after(after, inc=True),
+        )
+
+    def _until(self, now: datetime) -> datetime | None:
+        """Calculate the time when the dispatch should end.
+
+        If no previous run is found, None is returned.
+
+        Args:
+            now: The current time.
+
+        Returns:
+            The time when the dispatch should end or None if the dispatch is not running.
+
+        Raises:
+            ValueError: If the dispatch has no duration.
+        """
+        if self.duration is None:
+            raise ValueError("_until: Dispatch has no duration")
+
+        if (
+            not self.recurrence.frequency
+            or self.recurrence.frequency == Frequency.UNSPECIFIED
+        ):
+            return self.start_time + self.duration
+
+        latest_past_start: datetime | None = self.recurrence.prepare(
+            self.start_time
+        ).before(now, inc=True)
+
+        if not latest_past_start:
+            return None
+
+        return latest_past_start + self.duration
 
     @classmethod
     def from_protobuf(cls, pb_object: PBDispatch) -> "Dispatch":
