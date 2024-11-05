@@ -215,9 +215,9 @@ def test_dispatch_next_run(
 
     if recurrence.frequency == Frequency.WEEKLY:
         # Compute the next run based on the recurrence rule
-        expected_next_run = recurrence.prepare(start_time).after(
-            CURRENT_TIME, inc=False
-        )
+        expected_next_run = recurrence._as_rrule(  # pylint: disable=protected-access
+            start_time
+        ).after(CURRENT_TIME, inc=False)
     elif expected_next_run_offset is not None:
         expected_next_run = CURRENT_TIME + expected_next_run_offset
     else:
@@ -266,8 +266,10 @@ def test_dispatch_next_run_after(
     )
 
     if recurrence.frequency == Frequency.WEEKLY:
-        expected_next_run_after = recurrence.prepare(dispatch.start_time).after(
-            after, inc=True
+        expected_next_run_after = (
+            recurrence._as_rrule(  # pylint: disable=protected-access
+                dispatch.start_time
+            ).after(after, inc=True)
         )
     elif expected_next_run_after_offset is not None:
         expected_next_run_after = CURRENT_TIME + expected_next_run_after_offset

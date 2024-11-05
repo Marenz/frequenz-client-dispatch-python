@@ -186,7 +186,7 @@ class RecurrenceRule:
 
         return pb_rule
 
-    def prepare(self, start_time: datetime) -> rrule.rrule:
+    def _as_rrule(self, start_time: datetime) -> rrule.rrule:
         """Prepare the rrule object.
 
         Args:

@@ -254,7 +254,9 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
         # No type information for rrule, so we need to cast
         return cast(
             datetime | None,
-            self.recurrence.prepare(self.start_time).after(after, inc=True),
+            self.recurrence._as_rrule(  # pylint: disable=protected-access
+                self.start_time
+            ).after(after, inc=True),
         )
 
     def _until(self, now: datetime) -> datetime | None:
@@ -280,9 +282,11 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
         ):
             return self.start_time + self.duration
 
-        latest_past_start: datetime | None = self.recurrence.prepare(
-            self.start_time
-        ).before(now, inc=True)
+        latest_past_start: datetime | None = (
+            self.recurrence._as_rrule(  # pylint: disable=protected-access
+                self.start_time
+            ).before(now, inc=True)
+        )
 
         if not latest_past_start:
             return None
