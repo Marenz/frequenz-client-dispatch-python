@@ -161,7 +161,7 @@ async def test_list_command(
         fake_client.set_dispatches(microgrid_id_, dispatch_list)
 
     result = await runner.invoke(
-        cli, ["list", str(microgrid_id)], env=ENVIRONMENT_VARIABLES
+        cli, ["--raw", "list", str(microgrid_id)], env=ENVIRONMENT_VARIABLES
     )
     assert expected_output in result.output
     assert result.exit_code == expected_return_code
@@ -343,6 +343,7 @@ async def test_create_command(
     expected_return_code: int,
 ) -> None:
     """Test the create command."""
+    args.insert(0, "--raw")
     result = await runner.invoke(cli, args, env=ENVIRONMENT_VARIABLES)
     now = datetime.now(get_localzone())
 
@@ -572,7 +573,7 @@ async def test_update_command(
     """Test the update command."""
     fake_client.set_dispatches(1, dispatches)
     result = await runner.invoke(
-        cli, ["update", "1", "1", *args], env=ENVIRONMENT_VARIABLES
+        cli, ["--raw", "update", "1", "1", *args], env=ENVIRONMENT_VARIABLES
     )
     assert expected_output in result.output
     assert result.exit_code == expected_return_code
@@ -623,7 +624,7 @@ async def test_get_command(
     """Test the get command."""
     fake_client.set_dispatches(1, dispatches)
     result = await runner.invoke(
-        cli, ["get", "1", str(dispatch_id)], env=ENVIRONMENT_VARIABLES
+        cli, ["--raw", "get", "1", str(dispatch_id)], env=ENVIRONMENT_VARIABLES
     )
     assert result.exit_code == 0 if dispatches else 1
     assert expected_in_output in result.output

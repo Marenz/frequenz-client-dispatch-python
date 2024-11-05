@@ -2,4 +2,4 @@
 
 ## Summary
 
-* The base client dependency was updated to v0.8.0.
+* The dispatch-cli application now features fancy colors and formatting!
