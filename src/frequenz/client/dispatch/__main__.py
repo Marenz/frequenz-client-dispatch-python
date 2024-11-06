@@ -459,9 +459,9 @@ async def interactive_mode(url: str, key: str) -> None:
 
 
 # Add recurrence options to the create command
-create.params += recurrence_options  # pylint: disable=no-member
+create.params += recurrence_options
 # Add recurrence options to the update command
-update.params += recurrence_options  # pylint: disable=no-member
+update.params += recurrence_options
 
 
 def main() -> None:
