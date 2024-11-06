@@ -2,6 +2,8 @@
 # Copyright © 2024 Frequenz Energy-as-a-Service GmbH
 
 """Dispatch API client for Python."""
+from __future__ import annotations
+
 from datetime import datetime, timedelta
 from importlib.resources import files
 from pathlib import Path
@@ -33,6 +35,7 @@ from frequenz import channels
 from frequenz.client.base.channel import ChannelOptions, SslOptions
 from frequenz.client.base.client import BaseApiClient
 from frequenz.client.base.conversion import to_timestamp
+from frequenz.client.base.exception import ClientNotConnected
 from frequenz.client.base.retry import LinearBackoff
 from frequenz.client.base.streaming import GrpcStreamBroadcaster
 
@@ -49,7 +52,7 @@ from .types import (
 DEFAULT_DISPATCH_PORT = 50051
 
 
-class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
+class Client(BaseApiClient):
     """Dispatch API client."""
 
     streams: dict[
@@ -73,7 +76,6 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
         """
         super().__init__(
             server_url,
-            dispatch_pb2_grpc.MicrogridDispatchServiceStub,
             connect=connect,
             channel_defaults=ChannelOptions(
                 port=DEFAULT_DISPATCH_PORT,
@@ -88,6 +90,20 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
             ),
         )
         self._metadata = (("key", key),)
+        self._setup_stub()
+
+    def _setup_stub(self) -> None:
+        self._stub = cast(
+            dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub,
+            dispatch_pb2_grpc.MicrogridDispatchServiceStub(self.channel),
+        )
+
+    @property
+    def stub(self) -> dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub:
+        """The stub for the service."""
+        if self._channel is None:
+            raise ClientNotConnected(server_url=self.server_url, operation="stub")
+        return self._stub
 
     # pylint: disable=too-many-arguments, too-many-locals
     async def list(
