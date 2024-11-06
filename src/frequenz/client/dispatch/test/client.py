@@ -34,6 +34,9 @@ class FakeClient(Client):
         """
         return self._stuba
 
+    def _setup_stub(self) -> None:
+        """Empty body because no setup needed."""
+
     def dispatches(self, microgrid_id: int) -> list[Dispatch]:
         """List of dispatches.
 
