@@ -6,7 +6,7 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Literal
 
 # pylint: disable=no-name-in-module
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
@@ -15,6 +15,7 @@ from frequenz.api.dispatch.v1.dispatch_pb2 import (
 from frequenz.api.dispatch.v1.dispatch_pb2 import DispatchData
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
+from google.protobuf.timestamp_pb2 import Timestamp
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
 
@@ -41,7 +42,7 @@ class DispatchCreateRequest:
 
     This is understood and processed by downstream applications."""
 
-    start_time: datetime
+    start_time: datetime | Literal["NOW"]
     """The start time of the dispatch in UTC."""
 
     duration: timedelta | None
@@ -92,8 +93,10 @@ class DispatchCreateRequest:
         return DispatchCreateRequest(
             microgrid_id=pb_object.microgrid_id,
             type=pb_object.dispatch_data.type,
-            start_time=rounded_start_time(
-                to_datetime(pb_object.dispatch_data.start_time)
+            start_time=(
+                "NOW"
+                if pb_object.start_immediately
+                else rounded_start_time(to_datetime(pb_object.dispatch_data.start_time))
             ),
             duration=duration,
             target=_target_components_from_protobuf(pb_object.dispatch_data.target),
@@ -116,7 +119,11 @@ class DispatchCreateRequest:
             microgrid_id=self.microgrid_id,
             dispatch_data=DispatchData(
                 type=self.type,
-                start_time=to_timestamp(self.start_time),
+                start_time=(
+                    to_timestamp(self.start_time)
+                    if isinstance(self.start_time, datetime)
+                    else Timestamp()
+                ),
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
@@ -126,6 +133,7 @@ class DispatchCreateRequest:
                 payload=payload,
                 recurrence=self.recurrence.to_protobuf() if self.recurrence else None,
             ),
+            start_immediately=self.start_time == "NOW",
         )
 
 

@@ -5,7 +5,7 @@
 
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
-from typing import Any, Generator
+from typing import Any, Generator, Literal
 from unittest.mock import patch
 
 import pytest
@@ -309,6 +309,24 @@ async def test_list_command(
             ),
             0,
         ),
+        (
+            [
+                "create",
+                "1",
+                "test_start_immediately",
+                "BATTERY",
+                "now",
+                "1h",
+            ],
+            1,
+            "test_start_immediately",
+            "NOW",
+            timedelta(seconds=3600),
+            [ComponentCategory.BATTERY],
+            {},
+            RecurrenceRule(),
+            0,
+        ),
     ],
 )
 async def test_create_command(
@@ -317,7 +335,7 @@ async def test_create_command(
     args: list[str],
     expected_microgrid_id: int,
     expected_type: str,
-    expected_start_time_delta: timedelta,
+    expected_start_time_delta: timedelta | Literal["NOW"],
     expected_duration: timedelta,
     expected_target: list[int] | list[ComponentCategory],
     expected_options: dict[str, Any],
@@ -355,10 +373,17 @@ async def test_create_command(
     assert len(dispatches) == 1
     created_dispatch = dispatches[0]
     assert created_dispatch.type == expected_type
-    assert created_dispatch.start_time.timestamp() == pytest.approx(
-        (now + expected_start_time_delta).astimezone(timezone.utc).timestamp(),
-        abs=2,
-    )
+
+    if isinstance(expected_start_time_delta, timedelta):
+        assert created_dispatch.start_time.timestamp() == pytest.approx(
+            (now + expected_start_time_delta).astimezone(timezone.utc).timestamp(),
+            abs=2,
+        )
+    else:
+        assert created_dispatch.start_time.timestamp() == pytest.approx(
+            now.astimezone(timezone.utc).timestamp(), abs=2
+        )
+
     assert created_dispatch.duration and (
         created_dispatch.duration.total_seconds()
         == pytest.approx(expected_duration.total_seconds(), abs=2)

@@ -7,7 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from importlib.resources import files
 from pathlib import Path
-from typing import Any, AsyncIterator, Awaitable, Iterator, cast
+from typing import Any, AsyncIterator, Awaitable, Iterator, Literal, cast
 
 # pylint: disable=no-name-in-module
 from frequenz.api.common.v1.pagination.pagination_params_pb2 import PaginationParams
@@ -254,7 +254,7 @@ class Client(BaseApiClient):
         self,
         microgrid_id: int,
         type: str,  # pylint: disable=redefined-builtin
-        start_time: datetime,
+        start_time: datetime | Literal["NOW"],
         duration: timedelta | None,
         target: TargetComponents,
         *,
@@ -268,7 +268,7 @@ class Client(BaseApiClient):
         Args:
             microgrid_id: The microgrid_id to create the dispatch for.
             type: User defined string to identify the dispatch type.
-            start_time: The start time of the dispatch.
+            start_time: The start time of the dispatch. Can be "NOW" for immediate start.
             duration: The duration of the dispatch. Can be `None` for infinite
                 or no-duration dispatches (e.g. switching a component on).
             target: The component target for the dispatch.
@@ -283,12 +283,16 @@ class Client(BaseApiClient):
         Raises:
             ValueError: If start_time is in the past.
         """
-        if start_time <= datetime.now(tz=start_time.tzinfo):
-            raise ValueError("start_time must not be in the past")
+        if isinstance(start_time, datetime):
+            if start_time <= datetime.now(tz=start_time.tzinfo):
+                raise ValueError("start_time must not be in the past")
 
-        # Raise if it's not UTC
-        if start_time.tzinfo is None or start_time.tzinfo.utcoffset(start_time) is None:
-            raise ValueError("start_time must be timezone aware")
+            # Raise if it's not UTC
+            if (
+                start_time.tzinfo is None
+                or start_time.tzinfo.utcoffset(start_time) is None
+            ):
+                raise ValueError("start_time must be timezone aware")
 
         request = DispatchCreateRequest(
             microgrid_id=microgrid_id,

@@ -397,6 +397,9 @@ def _dispatch_from_request(
     params = _request.__dict__
     params.pop("microgrid_id")
 
+    if _request.start_time == "NOW":
+        params["start_time"] = datetime.now(tz=timezone.utc)
+
     return Dispatch(
         id=_id,
         create_time=create_time,

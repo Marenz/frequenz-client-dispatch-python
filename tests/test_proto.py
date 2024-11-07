@@ -149,3 +149,20 @@ def test_dispatch_create_request_with_no_recurrence() -> None:
     )
 
     assert request.to_protobuf().dispatch_data.HasField("recurrence") is False
+
+
+def test_dispatch_create_start_immediately() -> None:
+    """Test the dispatch create request with no start time."""
+    request = DispatchCreateRequest(
+        microgrid_id=123,
+        type="test",
+        start_time="NOW",
+        duration=timedelta(days=10),
+        target=[1, 2, 3],
+        active=True,
+        dry_run=False,
+        payload={"key": "value"},
+        recurrence=RecurrenceRule(),
+    )
+
+    assert request == DispatchCreateRequest.from_protobuf(request.to_protobuf())

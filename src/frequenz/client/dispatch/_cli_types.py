@@ -5,7 +5,7 @@
 
 import json
 from datetime import datetime, timedelta, timezone
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 import asyncclick as click
 import parsedatetime  # type: ignore
@@ -32,12 +32,15 @@ class FuzzyDateTime(click.ParamType):
 
     def convert(
         self, value: Any, param: click.Parameter | None, ctx: click.Context | None
-    ) -> datetime:
-        """Convert the value to a datetime object."""
+    ) -> datetime | Literal["NOW"] | None:
+        """Convert the value to a datetime object or the string "NOW"."""
         if isinstance(value, datetime):
             return value
 
         try:
+            if value.upper() == "NOW":
+                return "NOW"
+
             parsed_dt, parse_status = self.cal.parseDT(value, tzinfo=self.local_tz)
             if parse_status == 0:
                 self.fail(f"Invalid time expression: {value}", param, ctx)
