@@ -7,14 +7,16 @@ from datetime import datetime, timedelta, timezone
 
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch._internal_types import DispatchCreateRequest
-from frequenz.client.dispatch.types import (
-    Dispatch,
+from frequenz.client.dispatch.recurrence import (
     EndCriteria,
     Frequency,
     RecurrenceRule,
     Weekday,
-    component_selector_from_protobuf,
-    component_selector_to_protobuf,
+)
+from frequenz.client.dispatch.types import (
+    Dispatch,
+    _component_selector_from_protobuf,
+    _component_selector_to_protobuf,
 )
 
 
@@ -28,8 +30,8 @@ def test_component_selector() -> None:
         [ComponentCategory.METER],
         [ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY],
     ):
-        protobuf = component_selector_to_protobuf(selector)
-        assert component_selector_from_protobuf(protobuf) == selector
+        protobuf = _component_selector_to_protobuf(selector)
+        assert _component_selector_from_protobuf(protobuf) == selector
 
 
 def test_end_criteria() -> None:

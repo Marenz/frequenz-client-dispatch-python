@@ -18,11 +18,11 @@ from google.protobuf.struct_pb2 import Struct
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
 
+from .recurrence import RecurrenceRule
 from .types import (
     ComponentSelector,
-    RecurrenceRule,
-    component_selector_from_protobuf,
-    component_selector_to_protobuf,
+    _component_selector_from_protobuf,
+    _component_selector_to_protobuf,
 )
 
 # pylint: enable=no-name-in-module
@@ -97,7 +97,9 @@ class DispatchCreateRequest:
                 to_datetime(pb_object.dispatch_data.start_time)
             ),
             duration=duration,
-            selector=component_selector_from_protobuf(pb_object.dispatch_data.selector),
+            selector=_component_selector_from_protobuf(
+                pb_object.dispatch_data.selector
+            ),
             active=pb_object.dispatch_data.is_active,
             dry_run=pb_object.dispatch_data.is_dry_run,
             payload=MessageToDict(pb_object.dispatch_data.payload),
@@ -121,7 +123,7 @@ class DispatchCreateRequest:
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
-                selector=component_selector_to_protobuf(self.selector),
+                selector=_component_selector_to_protobuf(self.selector),
                 is_active=self.active,
                 is_dry_run=self.dry_run,
                 payload=payload,

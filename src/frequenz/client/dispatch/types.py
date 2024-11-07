@@ -4,8 +4,8 @@
 """Type wrappers for the generated protobuf messages."""
 
 
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 from typing import Any, cast
 
@@ -14,9 +14,11 @@ from frequenz.api.dispatch.v1.dispatch_pb2 import (
     ComponentSelector as PBComponentSelector,
 )
 from frequenz.api.dispatch.v1.dispatch_pb2 import Dispatch as PBDispatch
-from frequenz.api.dispatch.v1.dispatch_pb2 import DispatchData, DispatchMetadata
-from frequenz.api.dispatch.v1.dispatch_pb2 import RecurrenceRule as PBRecurrenceRule
-from frequenz.api.dispatch.v1.dispatch_pb2 import StreamMicrogridDispatchesResponse
+from frequenz.api.dispatch.v1.dispatch_pb2 import (
+    DispatchData,
+    DispatchMetadata,
+    StreamMicrogridDispatchesResponse,
+)
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 
@@ -25,6 +27,8 @@ from frequenz.client.base.conversion import to_datetime, to_timestamp
 # pylint: enable=no-name-in-module
 from frequenz.client.common.microgrid.components import ComponentCategory
 
+from .recurrence import Frequency, RecurrenceRule, Weekday
+
 ComponentSelector = list[int] | list[ComponentCategory]
 """A component selector specifying which components a dispatch targets.
 
@@ -32,7 +36,7 @@ A component selector can be a list of component IDs or a list of categories.
 """
 
 
-def component_selector_from_protobuf(
+def _component_selector_from_protobuf(
     pb_selector: PBComponentSelector,
 ) -> ComponentSelector:
     """Convert a protobuf component selector to a component selector.
@@ -62,7 +66,7 @@ def component_selector_from_protobuf(
             raise ValueError("Invalid component selector")
 
 
-def component_selector_to_protobuf(
+def _component_selector_to_protobuf(
     selector: ComponentSelector,
 ) -> PBComponentSelector:
     """Convert a component selector to a protobuf component selector.
@@ -94,155 +98,6 @@ def component_selector_to_protobuf(
     return pb_selector
 
 
-class Weekday(IntEnum):
-    """Enum representing the day of the week."""
-
-    UNSPECIFIED = PBRecurrenceRule.WEEKDAY_UNSPECIFIED
-    MONDAY = PBRecurrenceRule.WEEKDAY_MONDAY
-    TUESDAY = PBRecurrenceRule.WEEKDAY_TUESDAY
-    WEDNESDAY = PBRecurrenceRule.WEEKDAY_WEDNESDAY
-    THURSDAY = PBRecurrenceRule.WEEKDAY_THURSDAY
-    FRIDAY = PBRecurrenceRule.WEEKDAY_FRIDAY
-    SATURDAY = PBRecurrenceRule.WEEKDAY_SATURDAY
-    SUNDAY = PBRecurrenceRule.WEEKDAY_SUNDAY
-
-
-class Frequency(IntEnum):
-    """Enum representing the frequency of the recurrence."""
-
-    UNSPECIFIED = PBRecurrenceRule.FREQUENCY_UNSPECIFIED
-    MINUTELY = PBRecurrenceRule.FREQUENCY_MINUTELY
-    HOURLY = PBRecurrenceRule.FREQUENCY_HOURLY
-    DAILY = PBRecurrenceRule.FREQUENCY_DAILY
-    WEEKLY = PBRecurrenceRule.FREQUENCY_WEEKLY
-    MONTHLY = PBRecurrenceRule.FREQUENCY_MONTHLY
-    YEARLY = PBRecurrenceRule.FREQUENCY_YEARLY
-
-
-@dataclass(kw_only=True)
-class EndCriteria:
-    """Controls when a recurring dispatch should end."""
-
-    count: int | None = None
-    """The number of times this dispatch should recur."""
-    until: datetime | None = None
-    """The end time of this dispatch in UTC."""
-
-    @classmethod
-    def from_protobuf(cls, pb_criteria: PBRecurrenceRule.EndCriteria) -> "EndCriteria":
-        """Convert a protobuf end criteria to an end criteria.
-
-        Args:
-            pb_criteria: The protobuf end criteria to convert.
-
-        Returns:
-            The converted end criteria.
-        """
-        instance = cls()
-
-        match pb_criteria.WhichOneof("count_or_until"):
-            case "count":
-                instance.count = pb_criteria.count
-            case "until":
-                instance.until = to_datetime(pb_criteria.until)
-        return instance
-
-    def to_protobuf(self) -> PBRecurrenceRule.EndCriteria:
-        """Convert an end criteria to a protobuf end criteria.
-
-        Returns:
-            The converted protobuf end criteria.
-        """
-        pb_criteria = PBRecurrenceRule.EndCriteria()
-
-        if self.count is not None:
-            pb_criteria.count = self.count
-        elif self.until is not None:
-            pb_criteria.until.CopyFrom(to_timestamp(self.until))
-
-        return pb_criteria
-
-
-# pylint: disable=too-many-instance-attributes
-@dataclass(kw_only=True)
-class RecurrenceRule:
-    """Ruleset governing when and how a dispatch should re-occur.
-
-    Attributes follow the iCalendar specification (RFC5545) for recurrence rules.
-    """
-
-    frequency: Frequency = Frequency.UNSPECIFIED
-    """The frequency specifier of this recurring dispatch."""
-
-    interval: int = 0
-    """How often this dispatch should recur, based on the frequency."""
-
-    end_criteria: EndCriteria | None = None
-    """When this dispatch should end.
-
-    Can recur a fixed number of times or until a given timestamp."""
-
-    byminutes: list[int] = field(default_factory=list)
-    """On which minute(s) of the hour the event occurs."""
-
-    byhours: list[int] = field(default_factory=list)
-    """On which hour(s) of the day the event occurs."""
-
-    byweekdays: list[Weekday] = field(default_factory=list)
-    """On which day(s) of the week the event occurs."""
-
-    bymonthdays: list[int] = field(default_factory=list)
-    """On which day(s) of the month the event occurs."""
-
-    bymonths: list[int] = field(default_factory=list)
-    """On which month(s) of the year the event occurs."""
-
-    @classmethod
-    def from_protobuf(cls, pb_rule: PBRecurrenceRule) -> "RecurrenceRule":
-        """Convert a protobuf recurrence rule to a recurrence rule.
-
-        Args:
-            pb_rule: The protobuf recurrence rule to convert.
-
-        Returns:
-            The converted recurrence rule.
-        """
-        return RecurrenceRule(
-            frequency=Frequency(pb_rule.freq),
-            interval=pb_rule.interval,
-            end_criteria=(
-                EndCriteria.from_protobuf(pb_rule.end_criteria)
-                if pb_rule.HasField("end_criteria")
-                else None
-            ),
-            byminutes=list(pb_rule.byminutes),
-            byhours=list(pb_rule.byhours),
-            byweekdays=[Weekday(day) for day in pb_rule.byweekdays],
-            bymonthdays=list(pb_rule.bymonthdays),
-            bymonths=list(pb_rule.bymonths),
-        )
-
-    def to_protobuf(self) -> PBRecurrenceRule:
-        """Convert a recurrence rule to a protobuf recurrence rule.
-
-        Returns:
-            The converted protobuf recurrence rule.
-        """
-        pb_rule = PBRecurrenceRule()
-
-        pb_rule.freq = self.frequency.value
-        pb_rule.interval = self.interval
-        if self.end_criteria is not None:
-            pb_rule.end_criteria.CopyFrom(self.end_criteria.to_protobuf())
-        pb_rule.byminutes.extend(self.byminutes)
-        pb_rule.byhours.extend(self.byhours)
-        pb_rule.byweekdays.extend([day.value for day in self.byweekdays])
-        pb_rule.bymonthdays.extend(self.bymonthdays)
-        pb_rule.bymonths.extend(self.bymonths)
-
-        return pb_rule
-
-
 @dataclass(frozen=True, kw_only=True)
 class TimeIntervalFilter:
     """Filter for a time interval."""
@@ -261,7 +116,7 @@ class TimeIntervalFilter:
 
 
 @dataclass(kw_only=True, frozen=True)
-class Dispatch:
+class Dispatch:  # pylint: disable=too-many-instance-attributes
     """Represents a dispatch operation within a microgrid system."""
 
     id: int
@@ -305,6 +160,123 @@ class Dispatch:
     update_time: datetime
     """The last update time of the dispatch in UTC. Set when a dispatch is modified."""
 
+    @property
+    def started(self) -> bool:
+        """Check if the dispatch has started.
+
+        A dispatch is considered started if the current time is after the start
+        time but before the end time.
+
+        Recurring dispatches are considered started if the current time is after
+        the start time of the last occurrence but before the end time of the
+        last occurrence.
+        """
+        if not self.active:
+            return False
+
+        now = datetime.now(tz=timezone.utc)
+
+        if now < self.start_time:
+            return False
+
+        # A dispatch without duration is always running, once it started
+        if self.duration is None:
+            return True
+
+        if until := self._until(now):
+            return now < until
+
+        return False
+
+    @property
+    def until(self) -> datetime | None:
+        """Time when the dispatch should end.
+
+        Returns the time that a running dispatch should end.
+        If the dispatch is not running, None is returned.
+
+        Returns:
+            The time when the dispatch should end or None if the dispatch is not running.
+        """
+        if not self.active:
+            return None
+
+        now = datetime.now(tz=timezone.utc)
+        return self._until(now)
+
+    @property
+    def next_run(self) -> datetime | None:
+        """Calculate the next run of a dispatch.
+
+        Returns:
+            The next run of the dispatch or None if the dispatch is finished.
+        """
+        return self.next_run_after(datetime.now(tz=timezone.utc))
+
+    def next_run_after(self, after: datetime) -> datetime | None:
+        """Calculate the next run of a dispatch.
+
+        Args:
+            after: The time to calculate the next run from.
+
+        Returns:
+            The next run of the dispatch or None if the dispatch is finished.
+        """
+        if (
+            not self.recurrence.frequency
+            or self.recurrence.frequency == Frequency.UNSPECIFIED
+            or self.duration is None  # Infinite duration
+        ):
+            if after > self.start_time:
+                return None
+            return self.start_time
+
+        # Make sure no weekday is UNSPECIFIED
+        if Weekday.UNSPECIFIED in self.recurrence.byweekdays:
+            return None
+
+        # No type information for rrule, so we need to cast
+        return cast(
+            datetime | None,
+            self.recurrence._as_rrule(  # pylint: disable=protected-access
+                self.start_time
+            ).after(after, inc=True),
+        )
+
+    def _until(self, now: datetime) -> datetime | None:
+        """Calculate the time when the dispatch should end.
+
+        If no previous run is found, None is returned.
+
+        Args:
+            now: The current time.
+
+        Returns:
+            The time when the dispatch should end or None if the dispatch is not running.
+
+        Raises:
+            ValueError: If the dispatch has no duration.
+        """
+        if self.duration is None:
+            raise ValueError("_until: Dispatch has no duration")
+
+        if (
+            not self.recurrence.frequency
+            or self.recurrence.frequency == Frequency.UNSPECIFIED
+        ):
+            return self.start_time + self.duration
+
+        latest_past_start: datetime | None = (
+            self.recurrence._as_rrule(  # pylint: disable=protected-access
+                self.start_time
+            ).before(now, inc=True)
+        )
+
+        if not latest_past_start:
+            return None
+
+        return latest_past_start + self.duration
+
     @classmethod
     def from_protobuf(cls, pb_object: PBDispatch) -> "Dispatch":
         """Convert a protobuf dispatch to a dispatch.
@@ -326,7 +298,7 @@ class Dispatch:
                 if pb_object.data.duration
                 else None
             ),
-            selector=component_selector_from_protobuf(pb_object.data.selector),
+            selector=_component_selector_from_protobuf(pb_object.data.selector),
             active=pb_object.data.is_active,
             dry_run=pb_object.data.is_dry_run,
             payload=MessageToDict(pb_object.data.payload),
@@ -354,7 +326,7 @@ class Dispatch:
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
-                selector=component_selector_to_protobuf(self.selector),
+                selector=_component_selector_to_protobuf(self.selector),
                 is_active=self.active,
                 is_dry_run=self.dry_run,
                 payload=payload,
