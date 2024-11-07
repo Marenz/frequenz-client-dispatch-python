@@ -28,7 +28,7 @@ from ._cli_types import (
     FuzzyIntRange,
     FuzzyTimeDelta,
     JsonDictParamType,
-    SelectorParamType,
+    TargetComponentParamType,
 )
 from ._client import Client
 
@@ -79,7 +79,7 @@ async def cli(ctx: click.Context, url: str, key: str) -> None:
 @cli.command("list")
 @click.pass_context
 @click.argument("microgrid-id", required=True, type=int)
-@click.option("--selector", "-s", type=SelectorParamType(), multiple=True)
+@click.option("--target", "-t", type=TargetComponentParamType(), multiple=True)
 @click.option("--start-from", type=FuzzyDateTime())
 @click.option("--start-to", type=FuzzyDateTime())
 @click.option("--end-from", type=FuzzyDateTime())
@@ -92,11 +92,12 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
 
     Lists all dispatches for MICROGRID_ID that match the given filters.
 
-    The selector option can be given multiple times.
+    The target option can be given multiple times.
     """
-    if "selector" in filters:
-        selector = filters.pop("selector")
-        filters["component_selectors"] = selector
+    if "target" in filters:
+        target = filters.pop("target")
+        # Name of the parameter in client.list()
+        filters["target_components"] = target
 
     num_dispatches = 0
     async for page in ctx.obj["client"].list(**filters):
@@ -241,7 +242,7 @@ recurrence_options: list[click.Parameter] = [
     required=True,
     type=str,
 )
-@click.argument("selector", required=True, type=SelectorParamType())
+@click.argument("target", required=True, type=TargetComponentParamType())
 @click.argument("start-time", required=True, type=FuzzyDateTime())
 @click.argument("duration", required=False, type=FuzzyTimeDelta())
 @click.option("--active", "-a", type=bool, default=True)
@@ -260,7 +261,7 @@ async def create(
     Creates a new dispatch for MICROGRID_ID of type TYPE running for DURATION seconds
     starting at START_TIME.
 
-    SELECTOR is a comma-separated list of either component categories or component IDs.
+    TARGET is a comma-separated list of either component categories or component IDs.
     Possible component categories: "BATTERY, GRID, METER, INVERTER, EV_CHARGER, CHP".
     """
     # Remove keys with `None` value
@@ -286,7 +287,7 @@ async def create(
 @click.option("--start-time", type=FuzzyDateTime())
 @click.option("--duration", type=FuzzyTimeDelta())
 @click.option("--no-duration", is_flag=True)
-@click.option("--selector", type=SelectorParamType())
+@click.option("--target", type=TargetComponentParamType())
 @click.option("--active", type=bool)
 @click.option(
     "--payload", "-p", type=JsonDictParamType(), help="JSON payload for the dispatch"

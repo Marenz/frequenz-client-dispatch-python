@@ -66,7 +66,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
-                        selector=[1, 2, 3],
+                        target=[1, 2, 3],
                         active=True,
                         dry_run=False,
                         payload={},
@@ -89,7 +89,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
-                        selector=[1, 2, 3],
+                        target=[1, 2, 3],
                         active=True,
                         dry_run=False,
                         payload={},
@@ -111,7 +111,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
-                        selector=[1, 2, 3],
+                        target=[1, 2, 3],
                         active=True,
                         dry_run=False,
                         payload={},
@@ -126,7 +126,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
-                        selector=[1, 2, 3],
+                        target=[1, 2, 3],
                         active=True,
                         dry_run=False,
                         payload={},
@@ -171,7 +171,7 @@ async def test_list_command(
 @pytest.mark.parametrize(
     "args, expected_microgrid_id, expected_type, "
     "expected_start_time_delta, expected_duration, "
-    "expected_selector, expected_options, expected_reccurence, expected_return_code",
+    "expected_target, expected_options, expected_reccurence, expected_return_code",
     [
         (
             [
@@ -319,7 +319,7 @@ async def test_create_command(
     expected_type: str,
     expected_start_time_delta: timedelta,
     expected_duration: timedelta,
-    expected_selector: list[int] | list[ComponentCategory],
+    expected_target: list[int] | list[ComponentCategory],
     expected_options: dict[str, Any],
     expected_reccurence: RecurrenceRule | None,
     expected_return_code: int,
@@ -363,7 +363,7 @@ async def test_create_command(
         created_dispatch.duration.total_seconds()
         == pytest.approx(expected_duration.total_seconds(), abs=2)
     )
-    assert created_dispatch.selector == expected_selector
+    assert created_dispatch.target == expected_target
     assert created_dispatch.recurrence == expected_reccurence
 
     for key, value in expected_options.items():
@@ -381,7 +381,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[ComponentCategory.BATTERY],
+                    target=[ComponentCategory.BATTERY],
                     active=True,
                     dry_run=False,
                     payload={},
@@ -405,7 +405,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[ComponentCategory.BATTERY],
+                    target=[ComponentCategory.BATTERY],
                     active=True,
                     dry_run=False,
                     payload={},
@@ -431,7 +431,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[ComponentCategory.BATTERY, ComponentCategory.EV_CHARGER],
+                    target=[ComponentCategory.BATTERY, ComponentCategory.EV_CHARGER],
                     active=True,
                     dry_run=False,
                     payload={},
@@ -441,19 +441,19 @@ async def test_create_command(
                 )
             ],
             [
-                "--selector",
+                "--target",
                 "BATTERY, EV_CHARGER, CHP",
             ],
             {
-                "selector": [
+                "target": [
                     ComponentCategory.BATTERY,
                     ComponentCategory.EV_CHARGER,
                     ComponentCategory.CHP,
                 ],
             },
             0,
-            "selector=[<ComponentCategory.BATTERY: 5>,\n                   "
-            + "<ComponentCategory.EV_CHARGER: 6>,\n                   "
+            "target=[<ComponentCategory.BATTERY: 5>,\n                 "
+            + "<ComponentCategory.EV_CHARGER: 6>,\n                 "
             + "<ComponentCategory.CHP: 10>]",
         ),
         (
@@ -463,7 +463,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[500, 501],
+                    target=[500, 501],
                     active=True,
                     dry_run=False,
                     payload={},
@@ -473,7 +473,7 @@ async def test_create_command(
                 )
             ],
             [
-                "--selector",
+                "--target",
                 "400, 401",
                 "--frequency",
                 "daily",
@@ -493,7 +493,7 @@ async def test_create_command(
                 '{"key": "value"}',
             ],
             {
-                "selector": [400, 401],
+                "target": [400, 401],
                 "recurrence": RecurrenceRule(
                     frequency=Frequency.DAILY,
                     interval=5,
@@ -509,7 +509,7 @@ async def test_create_command(
                 "payload": {"key": "value"},
             },
             0,
-            """         selector=[400, 401],
+            """         target=[400, 401],
          active=True,
          dry_run=False,
          payload={'key': 'value'},
@@ -568,7 +568,7 @@ async def test_update_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[1, 2, 3],
+                    target=[1, 2, 3],
                     active=True,
                     dry_run=False,
                     payload={},
@@ -615,7 +615,7 @@ async def test_get_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    selector=[1, 2, 3],
+                    target=[1, 2, 3],
                     active=True,
                     dry_run=False,
                     payload={},

@@ -10,15 +10,13 @@ from enum import IntEnum
 from typing import Any, cast
 
 # pylint: disable=no-name-in-module
-from frequenz.api.dispatch.v1.dispatch_pb2 import (
-    ComponentSelector as PBComponentSelector,
-)
 from frequenz.api.dispatch.v1.dispatch_pb2 import Dispatch as PBDispatch
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
     DispatchData,
     DispatchMetadata,
     StreamMicrogridDispatchesResponse,
 )
+from frequenz.api.dispatch.v1.dispatch_pb2 import TargetComponents as PBTargetComponents
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 
@@ -29,73 +27,73 @@ from frequenz.client.common.microgrid.components import ComponentCategory
 
 from .recurrence import Frequency, RecurrenceRule, Weekday
 
-ComponentSelector = list[int] | list[ComponentCategory]
-"""A component selector specifying which components a dispatch targets.
+TargetComponents = list[int] | list[ComponentCategory]
+"""One or more target components specifying which components a dispatch targets.
 
-A component selector can be a list of component IDs or a list of categories.
+It can be a list of component IDs or a list of categories.
 """
 
 
-def _component_selector_from_protobuf(
-    pb_selector: PBComponentSelector,
-) -> ComponentSelector:
-    """Convert a protobuf component selector to a component selector.
+def _target_components_from_protobuf(
+    pb_target: PBTargetComponents,
+) -> TargetComponents:
+    """Convert protobuf target components to a more native type.
 
     Args:
-        pb_selector: The protobuf component selector to convert.
+        pb_target: The protobuf target components to convert.
 
     Raises:
-        ValueError: If the protobuf component selector is invalid.
+        ValueError: If the protobuf target components are invalid.
 
     Returns:
-        The converted component selector.
+        The converted target components.
     """
-    match pb_selector.WhichOneof("selector"):
+    match pb_target.WhichOneof("components"):
         case "component_ids":
-            id_list: list[int] = list(pb_selector.component_ids.ids)
+            id_list: list[int] = list(pb_target.component_ids.ids)
             return id_list
         case "component_categories":
             category_list: list[ComponentCategory] = list(
                 map(
                     ComponentCategory.from_proto,
-                    pb_selector.component_categories.categories,
+                    pb_target.component_categories.categories,
                 )
             )
             return category_list
         case _:
-            raise ValueError("Invalid component selector")
+            raise ValueError("Invalid target components")
 
 
-def _component_selector_to_protobuf(
-    selector: ComponentSelector,
-) -> PBComponentSelector:
-    """Convert a component selector to a protobuf component selector.
+def _target_components_to_protobuf(
+    target: TargetComponents,
+) -> PBTargetComponents:
+    """Convert target components to protobuf.
 
     Args:
-        selector: The component selector to convert.
+        target: The target components to convert.
 
     Raises:
-        ValueError: If the component selector is invalid.
+        ValueError: If the target components are invalid.
 
     Returns:
-        The converted protobuf component selector.
+        The converted protobuf target components.
     """
-    pb_selector = PBComponentSelector()
-    match selector:
+    pb_target = PBTargetComponents()
+    match target:
         case list(component_ids) if all(isinstance(id, int) for id in component_ids):
-            pb_selector.component_ids.ids.extend(cast(list[int], component_ids))
+            pb_target.component_ids.ids.extend(cast(list[int], component_ids))
         case list(categories) if all(
             isinstance(cat, ComponentCategory) for cat in categories
         ):
-            pb_selector.component_categories.categories.extend(
+            pb_target.component_categories.categories.extend(
                 map(
                     lambda cat: cat.to_proto(),
                     cast(list[ComponentCategory], categories),
                 )
             )
         case _:
-            raise ValueError("Invalid component selector")
-    return pb_selector
+            raise ValueError(f"Invalid target components: {target}")
+    return pb_target
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -133,8 +131,8 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
     duration: timedelta | None
     """The duration of the dispatch, represented as a timedelta."""
 
-    selector: ComponentSelector
-    """The component selector specifying which components the dispatch targets."""
+    target: TargetComponents
+    """The target components of the dispatch."""
 
     active: bool
     """Indicates whether the dispatch is active and eligible for processing."""
@@ -298,7 +296,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 if pb_object.data.duration
                 else None
             ),
-            selector=_component_selector_from_protobuf(pb_object.data.selector),
+            target=_target_components_from_protobuf(pb_object.data.target),
             active=pb_object.data.is_active,
             dry_run=pb_object.data.is_dry_run,
             payload=MessageToDict(pb_object.data.payload),
@@ -326,7 +324,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
-                selector=_component_selector_to_protobuf(self.selector),
+                target=_target_components_to_protobuf(self.target),
                 is_active=self.active,
                 is_dry_run=self.dry_run,
                 payload=payload,

@@ -20,9 +20,9 @@ from frequenz.client.base.conversion import to_datetime, to_timestamp
 
 from .recurrence import RecurrenceRule
 from .types import (
-    ComponentSelector,
-    _component_selector_from_protobuf,
-    _component_selector_to_protobuf,
+    TargetComponents,
+    _target_components_from_protobuf,
+    _target_components_to_protobuf,
 )
 
 # pylint: enable=no-name-in-module
@@ -51,8 +51,8 @@ class DispatchCreateRequest:
     like a command to turn on a component.
     """
 
-    selector: ComponentSelector
-    """The component selector specifying which components the dispatch targets."""
+    target: TargetComponents
+    """The target components of the dispatch."""
 
     active: bool
     """Indicates whether the dispatch is active and eligible for processing."""
@@ -69,7 +69,6 @@ class DispatchCreateRequest:
 
     recurrence: RecurrenceRule | None
     """The recurrence rule for the dispatch.
-
     Defining any repeating patterns or schedules."""
 
     @classmethod
@@ -97,9 +96,7 @@ class DispatchCreateRequest:
                 to_datetime(pb_object.dispatch_data.start_time)
             ),
             duration=duration,
-            selector=_component_selector_from_protobuf(
-                pb_object.dispatch_data.selector
-            ),
+            target=_target_components_from_protobuf(pb_object.dispatch_data.target),
             active=pb_object.dispatch_data.is_active,
             dry_run=pb_object.dispatch_data.is_dry_run,
             payload=MessageToDict(pb_object.dispatch_data.payload),
@@ -123,7 +120,7 @@ class DispatchCreateRequest:
                 duration=(
                     round(self.duration.total_seconds()) if self.duration else None
                 ),
-                selector=_component_selector_to_protobuf(self.selector),
+                target=_target_components_to_protobuf(self.target),
                 is_active=self.active,
                 is_dry_run=self.dry_run,
                 payload=payload,

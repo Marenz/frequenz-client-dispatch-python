@@ -15,14 +15,14 @@ from frequenz.client.dispatch.recurrence import (
 )
 from frequenz.client.dispatch.types import (
     Dispatch,
-    _component_selector_from_protobuf,
-    _component_selector_to_protobuf,
+    _target_components_from_protobuf,
+    _target_components_to_protobuf,
 )
 
 
-def test_component_selector() -> None:
-    """Test the component selector."""
-    for selector in (
+def test_target_components() -> None:
+    """Test the target components."""
+    for components in (
         [1, 2, 3],
         [10, 20, 30],
         [ComponentCategory.BATTERY],
@@ -30,8 +30,8 @@ def test_component_selector() -> None:
         [ComponentCategory.METER],
         [ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY],
     ):
-        protobuf = _component_selector_to_protobuf(selector)
-        assert _component_selector_from_protobuf(protobuf) == selector
+        protobuf = _target_components_to_protobuf(components)
+        assert _target_components_from_protobuf(protobuf) == components
 
 
 def test_end_criteria() -> None:
@@ -98,7 +98,7 @@ def test_dispatch() -> None:
             update_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
             start_time=datetime(2024, 10, 10, tzinfo=timezone.utc),
             duration=timedelta(days=10),
-            selector=[1, 2, 3],
+            target=[1, 2, 3],
             active=True,
             dry_run=False,
             payload={"key": "value"},
@@ -118,7 +118,7 @@ def test_dispatch() -> None:
             update_time=datetime(2024, 3, 11, tzinfo=timezone.utc),
             start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
             duration=timedelta(seconds=20),
-            selector=[ComponentCategory.BATTERY],
+            target=[ComponentCategory.BATTERY],
             active=False,
             dry_run=True,
             payload={"key": "value1"},
@@ -141,7 +141,7 @@ def test_dispatch_create_request_with_no_recurrence() -> None:
         type="test",
         start_time=datetime(2024, 10, 10, tzinfo=timezone.utc),
         duration=timedelta(days=10),
-        selector=[1, 2, 3],
+        target=[1, 2, 3],
         active=True,
         dry_run=False,
         payload={"key": "value"},

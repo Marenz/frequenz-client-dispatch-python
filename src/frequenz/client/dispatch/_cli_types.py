@@ -130,10 +130,10 @@ class FuzzyIntRange(click.ParamType):
             self.fail(f"Invalid integer range: {value}", param, ctx)
 
 
-class SelectorParamType(click.ParamType):
-    """Click parameter type for selectors."""
+class TargetComponentParamType(click.ParamType):
+    """Click parameter type for targets."""
 
-    name = "selector"
+    name = "target"
 
     def convert(
         self, value: Any, param: click.Parameter | None, ctx: click.Context | None
@@ -154,7 +154,7 @@ class SelectorParamType(click.ParamType):
         values = value.split(",")
 
         if len(values) == 0:
-            self.fail("Empty selector list", param, ctx)
+            self.fail("Empty target list", param, ctx)
 
         error: Exception | None = None
         # Attempt to parse component ids

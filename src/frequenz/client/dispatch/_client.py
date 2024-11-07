@@ -42,10 +42,10 @@ from frequenz.client.base.streaming import GrpcStreamBroadcaster
 from ._internal_types import DispatchCreateRequest
 from .recurrence import RecurrenceRule
 from .types import (
-    ComponentSelector,
     Dispatch,
     DispatchEvent,
-    _component_selector_to_protobuf,
+    TargetComponents,
+    _target_components_to_protobuf,
 )
 
 # pylint: enable=no-name-in-module
@@ -110,7 +110,7 @@ class Client(BaseApiClient):
         self,
         microgrid_id: int,
         *,
-        component_selectors: Iterator[ComponentSelector] = iter(()),
+        target_components: Iterator[TargetComponents] = iter(()),
         start_from: datetime | None = None,
         start_to: datetime | None = None,
         end_from: datetime | None = None,
@@ -136,7 +136,7 @@ class Client(BaseApiClient):
 
         Args:
             microgrid_id: The microgrid_id to list dispatches for.
-            component_selectors: optional, list of component ids or categories to filter by.
+            target_components: optional, list of component ids or categories to filter by.
             start_from: optional, filter by start_time >= start_from.
             start_to: optional, filter by start_time < start_to.
             end_from: optional, filter by end_time >= end_from.
@@ -166,9 +166,9 @@ class Client(BaseApiClient):
         # Setup parameters
         start_time_interval = to_interval(start_from, start_to)
         end_time_interval = to_interval(end_from, end_to)
-        selectors = list(map(_component_selector_to_protobuf, component_selectors))
+        targets = list(map(_target_components_to_protobuf, target_components))
         filters = DispatchFilter(
-            selectors=selectors,
+            targets=targets,
             start_time_interval=start_time_interval,
             end_time_interval=end_time_interval,
             is_active=active,
@@ -256,7 +256,7 @@ class Client(BaseApiClient):
         type: str,  # pylint: disable=redefined-builtin
         start_time: datetime,
         duration: timedelta | None,
-        selector: ComponentSelector,
+        target: TargetComponents,
         *,
         active: bool = True,
         dry_run: bool = False,
@@ -271,7 +271,7 @@ class Client(BaseApiClient):
             start_time: The start time of the dispatch.
             duration: The duration of the dispatch. Can be `None` for infinite
                 or no-duration dispatches (e.g. switching a component on).
-            selector: The component selector for the dispatch.
+            target: The component target for the dispatch.
             active: The active status of the dispatch.
             dry_run: The dry_run status of the dispatch.
             payload: The payload of the dispatch.
@@ -295,7 +295,7 @@ class Client(BaseApiClient):
             type=type,
             start_time=start_time,
             duration=duration,
-            selector=selector,
+            target=target,
             active=active,
             dry_run=dry_run,
             payload=payload or {},
@@ -353,8 +353,8 @@ class Client(BaseApiClient):
                         msg.update.ClearField("duration")
                     else:
                         msg.update.duration = round(val.total_seconds())
-                case "selector":
-                    msg.update.selector.CopyFrom(_component_selector_to_protobuf(val))
+                case "target":
+                    msg.update.target.CopyFrom(_target_components_to_protobuf(val))
                 case "is_active":
                     msg.update.is_active = val
                 case "payload":
