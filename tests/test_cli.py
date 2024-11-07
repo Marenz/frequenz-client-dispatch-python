@@ -298,7 +298,7 @@ async def test_list_command(
             {},
             RecurrenceRule(
                 frequency=Frequency.DAILY,
-                interval=0,
+                interval=1,
                 end_criteria=EndCriteria(
                     count=None, until=(TEST_NOW + timedelta(days=1))
                 ),

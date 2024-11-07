@@ -187,7 +187,7 @@ recurrence_options: list[click.Parameter] = [
         ["--interval"],
         type=int,
         help="Interval of the dispatch, based on frequency",
-        default=0,
+        default=1,
     ),
     click.Option(
         ["--count"],
