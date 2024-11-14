@@ -176,8 +176,8 @@ class FakeService:
         """Filter a dispatch based on the request."""
         if request.HasField("filter"):
             _filter = request.filter
-            for selector in _filter.selectors:
-                if selector != dispatch.selector:
+            for target in _filter.targets:
+                if target != dispatch.target:
                     return False
             if _filter.HasField("start_time_interval"):
                 if start_from := _filter.start_time_interval.__dict__["from"]:
@@ -272,7 +272,7 @@ class FakeService:
                         getattr(request.update, split_path[0]),
                     )
                 # Fields that need to be copied
-                case "start_time" | "selector" | "payload":
+                case "start_time" | "target" | "payload":
                     getattr(pb_dispatch.data, split_path[0]).CopyFrom(
                         getattr(request.update, split_path[0])
                     )
@@ -396,6 +396,9 @@ def _dispatch_from_request(
     """
     params = _request.__dict__
     params.pop("microgrid_id")
+
+    if _request.start_time == "NOW":
+        params["start_time"] = datetime.now(tz=timezone.utc)
 
     return Dispatch(
         id=_id,

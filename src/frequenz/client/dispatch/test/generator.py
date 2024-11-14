@@ -92,7 +92,7 @@ class DispatchGenerator:
                     timedelta(seconds=self._rng.randint(0, 1000000)),
                 ]
             ),
-            selector=self._rng.choice(  # type: ignore
+            target=self._rng.choice(  # type: ignore
                 [
                     [
                         self._rng.choice(list(ComponentCategory)[1:])

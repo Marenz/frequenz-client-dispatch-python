@@ -82,7 +82,7 @@ def to_create_params(microgrid_id: int, dispatch: Dispatch) -> dict[str, Any]:
         "type": dispatch.type,
         "start_time": dispatch.start_time,
         "duration": dispatch.duration,
-        "selector": dispatch.selector,
+        "target": dispatch.target,
         "active": dispatch.active,
         "dry_run": dispatch.dry_run,
         "payload": dispatch.payload,

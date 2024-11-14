@@ -25,7 +25,7 @@ def dispatch_base() -> Dispatch:
         type="TypeA",
         start_time=CURRENT_TIME,
         duration=timedelta(minutes=20),
-        selector=[ComponentCategory.BATTERY],
+        target=[ComponentCategory.BATTERY],
         active=True,
         dry_run=False,
         payload={},
