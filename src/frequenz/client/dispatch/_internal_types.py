@@ -3,16 +3,18 @@
 
 """Type wrappers for the generated protobuf messages."""
 
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Literal
+from typing import Any
 
 # pylint: disable=no-name-in-module
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
     CreateMicrogridDispatchRequest as PBDispatchCreateRequest,
 )
 from frequenz.api.dispatch.v1.dispatch_pb2 import DispatchData
+from frequenz.core.sentinels import Sentinel
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 from google.protobuf.timestamp_pb2 import Timestamp
@@ -28,6 +30,8 @@ from .types import (
 
 # pylint: enable=no-name-in-module
 
+IMMEDIATELY = Sentinel("IMMEDIATELY")
+
 
 # pylint: disable=too-many-instance-attributes
 @dataclass(kw_only=True)
@@ -42,7 +46,7 @@ class DispatchCreateRequest:
 
     This is understood and processed by downstream applications."""
 
-    start_time: datetime | Literal["NOW"]
+    start_time: datetime | IMMEDIATELY
     """The start time of the dispatch in UTC."""
 
     duration: timedelta | None

@@ -40,6 +40,7 @@ dependencies = [
   "frequenz-api-dispatch == 1.0.0-rc1",
   "frequenz-client-base >= 0.7.0, < 0.8.0",
   "frequenz-client-common >= 0.1.0, < 0.3.0",
+  "frequenz-core @ git+https://github.com/frequenz-floss/frequenz-core-python.git@refs/pull/37/head",
   "grpcio >= 1.66.1, < 2",
 ]
 dynamic = ["version"]
