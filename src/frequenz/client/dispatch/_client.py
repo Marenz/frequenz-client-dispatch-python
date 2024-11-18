@@ -93,10 +93,11 @@ class Client(BaseApiClient):
         self._setup_stub()
 
     def _setup_stub(self) -> None:
-        self._stub = cast(
-            dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub,
-            dispatch_pb2_grpc.MicrogridDispatchServiceStub(self.channel),
-        )
+        stub = dispatch_pb2_grpc.MicrogridDispatchServiceStub(self.channel)
+        # We need the type: ignore here because the generated async stub only lives in
+        # the .pyi file (the interpreter doesn't know anything about it) so we can't use
+        # a proper `cast()`, we can only use the async stub as a type hint.
+        self._stub: dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub = stub  # type: ignore
 
     @property
     def stub(self) -> dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub:
