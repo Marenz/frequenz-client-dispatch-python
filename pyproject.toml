@@ -38,7 +38,7 @@ requires-python = ">= 3.11, < 4"
 dependencies = [
   "typing-extensions >= 4.6.1, < 5",
   "frequenz-api-dispatch == 1.0.0-rc1",
-  "frequenz-client-base >= 0.7.0, < 0.8.0",
+  "frequenz-client-base >= 0.8.0, < 0.9.0",
   "frequenz-client-common >= 0.1.0, < 0.3.0",
   "grpcio >= 1.66.1, < 2",
 ]

@@ -52,7 +52,7 @@ from .types import (
 DEFAULT_DISPATCH_PORT = 50051
 
 
-class Client(BaseApiClient):
+class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
     """Dispatch API client."""
 
     streams: dict[
@@ -76,6 +76,7 @@ class Client(BaseApiClient):
         """
         super().__init__(
             server_url,
+            dispatch_pb2_grpc.MicrogridDispatchServiceStub,
             connect=connect,
             channel_defaults=ChannelOptions(
                 port=DEFAULT_DISPATCH_PORT,
@@ -90,21 +91,17 @@ class Client(BaseApiClient):
             ),
         )
         self._metadata = (("key", key),)
-        self._setup_stub()
-
-    def _setup_stub(self) -> None:
-        stub = dispatch_pb2_grpc.MicrogridDispatchServiceStub(self.channel)
-        # We need the type: ignore here because the generated async stub only lives in
-        # the .pyi file (the interpreter doesn't know anything about it) so we can't use
-        # a proper `cast()`, we can only use the async stub as a type hint.
-        self._stub: dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub = stub  # type: ignore
 
     @property
     def stub(self) -> dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub:
         """The stub for the service."""
-        if self._channel is None:
+        if self._channel is None or self._stub is None:
             raise ClientNotConnected(server_url=self.server_url, operation="stub")
-        return self._stub
+        # This type: ignore is needed because we need to cast the sync stub to
+        # the async stub, but we can't use cast because the async stub doesn't
+        # actually exists to the eyes of the interpreter, it only exists for the
+        # type-checker, so it can only be used for type hints.
+        return self._stub  # type: ignore
 
     # pylint: disable=too-many-arguments, too-many-locals
     async def list(
