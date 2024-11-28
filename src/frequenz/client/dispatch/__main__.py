@@ -5,6 +5,7 @@
 
 import asyncio
 import os
+from datetime import datetime, timezone
 from pprint import pformat
 from typing import Any, List
 
@@ -16,13 +17,6 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import CompleteStyle
 
-from frequenz.client.dispatch.recurrence import (
-    EndCriteria,
-    Frequency,
-    RecurrenceRule,
-    Weekday,
-)
-
 from ._cli_types import (
     FuzzyDateTime,
     FuzzyIntRange,
@@ -31,8 +25,138 @@ from ._cli_types import (
     TargetComponentParamType,
 )
 from ._client import Client
+from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
+from .types import Dispatch
 
 DEFAULT_DISPATCH_API_URL = "grpc://fz-0004.frequenz.io:50051"
+
+
+def format_datetime(dt: datetime | None) -> str:
+    """Format datetime object to a readable string, or return 'N/A' if None."""
+    return dt.strftime("%Y-%m-%d %H:%M:%S %Z") if dt else "N/A"
+
+
+def format_recurrence(recurrence: RecurrenceRule) -> str:
+    """Format the recurrence rule, omitting empty or unspecified fields."""
+    parts: List[str] = []
+    # Since frequency is not UNSPECIFIED here (we check before calling this function)
+    parts.append(f"Frequency: {recurrence.frequency.name}")
+    if recurrence.interval:
+        parts.append(f"Interval: {recurrence.interval}")
+    if recurrence.end_criteria:
+        parts.append(f"End Criteria: {recurrence.end_criteria}")
+    # Include only non-empty lists
+    if recurrence.byminutes:
+        parts.append(f"Minutes: {', '.join(map(str, recurrence.byminutes))}")
+    if recurrence.byhours:
+        parts.append(f"Hours: {', '.join(map(str, recurrence.byhours))}")
+    if recurrence.byweekdays:
+        weekdays = ", ".join(day.name for day in recurrence.byweekdays)
+        parts.append(f"Weekdays: {weekdays}")
+    if recurrence.bymonthdays:
+        parts.append(f"Month Days: {', '.join(map(str, recurrence.bymonthdays))}")
+    if recurrence.bymonths:
+        months = ", ".join(map(month_name, recurrence.bymonths))
+        parts.append(f"Months: {months}")
+    return "\n".join(parts)
+
+
+def month_name(month: int) -> str:
+    """Return the name of the month."""
+    return datetime(2000, month, 1).strftime("%B")
+
+
+# pylint: disable=too-many-statements, too-many-locals
+def print_dispatch(dispatch: Dispatch) -> None:
+    """Print the dispatch details in a nicely formatted way with colors."""
+    # Determine the status and color
+    status: str = "running" if dispatch.started else "not running"
+    status_color: str = "green" if dispatch.started else "red"
+    status_str: str = click.style(status, fg=status_color, bold=True)
+
+    # Format the next start time with color
+    next_start_time_str: str = format_datetime(dispatch.next_run)
+    next_start_time_colored: str = click.style(next_start_time_str, fg="cyan")
+
+    start_in_timedelta = (
+        dispatch.next_run - datetime.now(timezone.utc) if dispatch.next_run else None
+    )
+    start_in_timedelta_str = str(start_in_timedelta) if start_in_timedelta else "N/A"
+    start_in_timedelta_colored = click.style(start_in_timedelta_str, fg="yellow")
+
+    # Format the target
+    if dispatch.target:
+        if len(dispatch.target) == 1:
+            target_str: str = str(dispatch.target[0])
+        else:
+            target_str = ", ".join(str(s) for s in dispatch.target)
+    else:
+        target_str = "None"
+
+    # Prepare the dispatch details
+    lines: List[str] = []
+    # Define the keys for alignment
+    keys = [
+        "ID",
+        "Type",
+        "Start Time",
+        "Duration",
+        "Target",
+        "Active",
+        "Dry Run",
+        "Payload",
+        "Recurrence",
+        "Create Time",
+        "Update Time",
+    ]
+    max_key_length: int = max(len(k) for k in keys)
+
+    # Helper function to format each line
+    def format_line(key: str, value: str, color: str = "cyan") -> str:
+        key_str = click.style(f"{key}:", fg=color)
+        val_color = "white"
+
+        if value in ("None", "False"):
+            val_color = "red"
+        elif value == "True":
+            val_color = "green"
+
+        val_str: str = click.style(value, fg=val_color)
+        return f"{key_str:<{max_key_length + 2}} {val_str}"
+
+    lines.append(click.style("Dispatch Details:", bold=True, underline=True))
+    lines.append(format_line("ID", str(dispatch.id)))
+    lines.append(format_line("Type", str(dispatch.type)))
+    lines.append(format_line("Start Time", format_datetime(dispatch.start_time)))
+    if dispatch.duration:
+        lines.append(format_line("Duration", str(dispatch.duration)))
+    else:
+        lines.append(format_line("Duration", "Infinite"))
+    lines.append(format_line("Target", target_str))
+    lines.append(format_line("Active", str(dispatch.active)))
+    lines.append(format_line("Dry Run", str(dispatch.dry_run)))
+    if dispatch.payload:
+        lines.append(format_line("Payload", str(dispatch.payload)))
+    # Only include recurrence if frequency is not UNSPECIFIED
+    if dispatch.recurrence and dispatch.recurrence.frequency != Frequency.UNSPECIFIED:
+        recurrence_str = format_recurrence(dispatch.recurrence)
+        # Indent recurrence details for better readability
+        indented_recurrence = "\n    " + recurrence_str.replace("\n", "\n    ")
+        lines.append(format_line("Recurrence", indented_recurrence, "green"))
+    else:
+        lines.append(format_line("Recurrence", "None"))
+    lines.append(format_line("Create Time", format_datetime(dispatch.create_time)))
+    lines.append(format_line("Update Time", format_datetime(dispatch.update_time)))
+
+    # Combine all lines
+    dispatch_info: str = "\n".join(lines)
+
+    # Output the formatted dispatch details
+    click.echo(f"{dispatch_info}\n")
+    click.echo(f"Dispatch is currently {status_str}")
+    click.echo(
+        f"Next start in: {start_in_timedelta_colored} ({next_start_time_colored})\n"
+    )
 
 
 # Click command groups
@@ -52,8 +176,15 @@ DEFAULT_DISPATCH_API_URL = "grpc://fz-0004.frequenz.io:50051"
     show_envvar=True,
     required=True,
 )
+@click.option(
+    "--raw",
+    is_flag=True,
+    help="Print output raw instead of formatted and colored",
+    required=False,
+    default=False,
+)
 @click.pass_context
-async def cli(ctx: click.Context, url: str, key: str) -> None:
+async def cli(ctx: click.Context, url: str, key: str, raw: bool) -> None:
     """Dispatch Service CLI."""
     if ctx.obj is None:
         ctx.obj = {}
@@ -70,6 +201,8 @@ async def cli(ctx: click.Context, url: str, key: str) -> None:
         "url": url,
         "key": key,
     }
+
+    ctx.obj["raw"] = raw
 
     # Check if a subcommand was given
     if ctx.invoked_subcommand is None:
@@ -102,7 +235,10 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
     num_dispatches = 0
     async for page in ctx.obj["client"].list(**filters):
         for dispatch in page:
-            click.echo(pformat(dispatch, compact=True))
+            if ctx.obj["raw"]:
+                click.echo(pformat(dispatch, compact=True))
+            else:
+                print_dispatch(dispatch)
             num_dispatches += 1
 
     click.echo(f"{num_dispatches} dispatches total.")
@@ -114,7 +250,10 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
 async def stream(ctx: click.Context, microgrid_id: int) -> None:
     """Stream dispatches."""
     async for message in ctx.obj["client"].stream(microgrid_id=microgrid_id):
-        click.echo(pformat(message, compact=True))
+        if ctx.obj["raw"]:
+            click.echo(pformat(message, compact=True))
+        else:
+            print_dispatch(message)
 
 
 def parse_recurrence(kwargs: dict[str, Any]) -> RecurrenceRule | None:
@@ -275,7 +414,10 @@ async def create(
         recurrence=parse_recurrence(kwargs),
         **kwargs,
     )
-    click.echo(pformat(dispatch, compact=True))
+    if ctx.obj["raw"]:
+        click.echo(pformat(dispatch, compact=True))
+    else:
+        print_dispatch(dispatch)
     click.echo("Dispatch created.")
 
 
@@ -330,7 +472,10 @@ async def update(
             microgrid_id=microgrid_id, dispatch_id=dispatch_id, new_fields=new_fields
         )
         click.echo("Dispatch updated:")
-        click.echo(pformat(changed_dispatch, compact=True))
+        if ctx.obj["raw"]:
+            click.echo(pformat(changed_dispatch, compact=True))
+        else:
+            print_dispatch(changed_dispatch)
     except grpc.RpcError as e:
         raise click.ClickException(f"Update failed: {e}")
 
@@ -348,7 +493,10 @@ async def get(ctx: click.Context, microgrid_id: int, dispatch_ids: List[int]) ->
             dispatch = await ctx.obj["client"].get(
                 microgrid_id=microgrid_id, dispatch_id=dispatch_id
             )
-            click.echo(pformat(dispatch, compact=True))
+            if ctx.obj["raw"]:
+                click.echo(pformat(dispatch, compact=True))
+            else:
+                print_dispatch(dispatch)
         except grpc.RpcError as e:
             click.echo(f"Error getting dispatch {dispatch_id}: {e}", err=True)
             num_failed += 1
