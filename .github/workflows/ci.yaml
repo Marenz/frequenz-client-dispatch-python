@@ -441,3 +441,45 @@ jobs:
 
       - name: Publish the Python distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  build-deb:
+    name: Build standalone executable
+    # Build the standalone executable only on PRs and tags
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Fetch sources
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install required Python packages
+        run: |
+          python -m pip install -U pip
+          python -m pip install -U pyinstaller fpm
+          pip freeze
+
+      # Create stub to work around pyinstaller bug with __main__
+      - name: Create stub
+        run: echo -e "from frequenz.client.dispatch.__main__ import main\n\nmain()" > stub.py
+
+      - name: Build the standalone executable
+        run: pyinstaller --onefile --name dispatch-cli --collect-all frequenz.client.dispatch stub.py
+
+      - name: Create deb package
+        run: |
+          git fetch --tags
+          VERSION=$(git describe ${{ github.sha }})
+          fpm -s dir -t deb -n dispatch-cli -v ${VERSION} dist/dispatch-cli=/usr/bin/dispatch-cli
+
+      - name: Upload deb package
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-cli
+          path: '*.deb'
