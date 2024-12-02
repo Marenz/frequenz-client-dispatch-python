@@ -48,6 +48,7 @@ _RRULE_FREQ_MAP = {
     Frequency.DAILY: rrule.DAILY,
     Frequency.WEEKLY: rrule.WEEKLY,
     Frequency.MONTHLY: rrule.MONTHLY,
+    Frequency.YEARLY: rrule.YEARLY,
 }
 """To map from our Frequency enum to the dateutil library enum."""
 
