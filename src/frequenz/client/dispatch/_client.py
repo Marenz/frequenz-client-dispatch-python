@@ -55,11 +55,6 @@ DEFAULT_DISPATCH_PORT = 50051
 class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
     """Dispatch API client."""
 
-    streams: dict[
-        int, GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]
-    ] = {}
-    """A dictionary of streamers, keyed by microgrid_id."""
-
     def __init__(
         self,
         *,
@@ -91,6 +86,10 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
             ),
         )
         self._metadata = (("key", key),)
+        self._streams: dict[
+            int, GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]
+        ] = {}
+        """A dictionary of streamers, keyed by microgrid_id."""
 
     @property
     def stub(self) -> dispatch_pb2_grpc.MicrogridDispatchServiceAsyncStub:
@@ -225,11 +224,11 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
         self, microgrid_id: int
     ) -> GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]:
         """Get an instance to the streaming helper."""
-        broadcaster = self.streams.get(microgrid_id)
+        broadcaster = self._streams.get(microgrid_id)
         # pylint: disable=protected-access
         if broadcaster is not None and broadcaster._channel.is_closed:
             # pylint: enable=protected-access
-            del self.streams[microgrid_id]
+            del self._streams[microgrid_id]
             broadcaster = None
         if broadcaster is None:
             request = StreamMicrogridDispatchesRequest(microgrid_id=microgrid_id)
@@ -244,7 +243,7 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
                 transform=DispatchEvent.from_protobuf,
                 retry_strategy=LinearBackoff(interval=1, limit=0),
             )
-            self.streams[microgrid_id] = broadcaster
+            self._streams[microgrid_id] = broadcaster
 
         return broadcaster
 

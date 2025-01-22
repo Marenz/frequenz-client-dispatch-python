@@ -54,6 +54,16 @@ class FakeClient(Client):
         """
         self._service.dispatches[microgrid_id] = value
 
+        if len(value) == 0:
+            return
+
+        # Max between last id and the max id in the list
+        # pylint: disable=protected-access
+        self._service._last_id = max(
+            self._service._last_id, max(dispatch.id for dispatch in value)
+        )
+        # pylint: enable=protected-access
+
     @property
     def _service(self) -> FakeService:
         """The fake service.
