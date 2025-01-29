@@ -293,7 +293,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             start_time=to_datetime(pb_object.data.start_time),
             duration=(
                 timedelta(seconds=pb_object.data.duration)
-                if pb_object.data.duration
+                if pb_object.data.HasField("duration")
                 else None
             ),
             target=_target_components_from_protobuf(pb_object.data.target),
@@ -322,7 +322,9 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 type=self.type,
                 start_time=to_timestamp(self.start_time),
                 duration=(
-                    round(self.duration.total_seconds()) if self.duration else None
+                    None
+                    if self.duration is None
+                    else round(self.duration.total_seconds())
                 ),
                 target=_target_components_to_protobuf(self.target),
                 is_active=self.active,

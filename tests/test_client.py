@@ -74,6 +74,15 @@ async def test_create_duration_none(client: FakeClient, sample: Dispatch) -> Non
     assert dispatch == sample
 
 
+async def test_create_duration_0(client: FakeClient, sample: Dispatch) -> None:
+    """Test creating a dispatch with a 0 duration."""
+    microgrid_id = random.randint(1, 100)
+    sample = replace(sample, duration=timedelta(minutes=0))
+    dispatch = await client.create(**to_create_params(microgrid_id, sample))
+    sample = _update_metadata(sample, dispatch)
+    assert dispatch == sample
+
+
 async def test_list_dispatches(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:
@@ -170,6 +179,24 @@ async def test_update_dispatch_to_no_duration(
         new_fields={"duration": None},
     )
     assert client.dispatches(microgrid_id)[0].duration is None
+
+
+async def test_update_dispatch_to_0_duration(
+    client: FakeClient, sample: Dispatch
+) -> None:
+    """Test updating the duration field of a dispatch to 0."""
+    microgrid_id = random.randint(1, 100)
+    client.set_dispatches(
+        microgrid_id=microgrid_id,
+        value=[replace(sample, duration=timedelta(minutes=10))],
+    )
+
+    await client.update(
+        microgrid_id=microgrid_id,
+        dispatch_id=sample.id,
+        new_fields={"duration": timedelta(minutes=0)},
+    )
+    assert client.dispatches(microgrid_id)[0].duration == timedelta(minutes=0)
 
 
 async def test_update_dispatch_from_no_duration(
