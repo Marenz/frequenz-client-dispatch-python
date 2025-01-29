@@ -128,7 +128,7 @@ def print_dispatch(dispatch: Dispatch) -> None:
     lines.append(format_line("ID", str(dispatch.id)))
     lines.append(format_line("Type", str(dispatch.type)))
     lines.append(format_line("Start Time", format_datetime(dispatch.start_time)))
-    if dispatch.duration:
+    if dispatch.duration is not None:
         lines.append(format_line("Duration", str(dispatch.duration)))
     else:
         lines.append(format_line("Duration", "Infinite"))
@@ -407,8 +407,7 @@ async def create(
     kwargs = {k: v for k, v in kwargs.items() if v is not None}
 
     # Required for client.create
-    if not kwargs.get("duration"):
-        kwargs["duration"] = None
+    kwargs.setdefault("duration", None)
 
     dispatch = await ctx.obj["client"].create(
         recurrence=parse_recurrence(kwargs),

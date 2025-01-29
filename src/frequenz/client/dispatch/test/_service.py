@@ -265,12 +265,18 @@ class FakeService:
 
             match split_path[0]:
                 # Fields that can be assigned directly
-                case "is_active" | "duration":
+                case "is_active":
                     setattr(
                         pb_dispatch.data,
                         split_path[0],
                         getattr(request.update, split_path[0]),
                     )
+                # Duration needs extra handling for clearing
+                case "duration":
+                    if request.update.HasField("duration"):
+                        pb_dispatch.data.duration = request.update.duration
+                    else:
+                        pb_dispatch.data.ClearField("duration")
                 # Fields that need to be copied
                 case "start_time" | "target" | "payload":
                     getattr(pb_dispatch.data, split_path[0]).CopyFrom(

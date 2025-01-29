@@ -125,7 +125,9 @@ class DispatchCreateRequest:
                     else Timestamp()
                 ),
                 duration=(
-                    round(self.duration.total_seconds()) if self.duration else None
+                    None
+                    if self.duration is None
+                    else round(self.duration.total_seconds())
                 ),
                 target=_target_components_to_protobuf(self.target),
                 is_active=self.active,
