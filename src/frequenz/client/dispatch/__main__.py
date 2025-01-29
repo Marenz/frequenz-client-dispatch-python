@@ -131,7 +131,7 @@ def print_dispatch(dispatch: Dispatch) -> None:
     if dispatch.duration is not None:
         lines.append(format_line("Duration", str(dispatch.duration)))
     else:
-        lines.append(format_line("Duration", "Infinite"))
+        lines.append(format_line("Duration", "Indefinite"))
     lines.append(format_line("Target", target_str))
     lines.append(format_line("Active", str(dispatch.active)))
     lines.append(format_line("Dry Run", str(dispatch.dry_run)))
