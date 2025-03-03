@@ -12,7 +12,9 @@ from typing import Any, Literal
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
     CreateMicrogridDispatchRequest as PBDispatchCreateRequest,
 )
-from frequenz.api.dispatch.v1.dispatch_pb2 import DispatchData
+from frequenz.api.dispatch.v1.dispatch_pb2 import (
+    DispatchData,
+)
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 from google.protobuf.timestamp_pb2 import Timestamp
