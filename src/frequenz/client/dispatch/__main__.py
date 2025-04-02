@@ -11,6 +11,7 @@ from typing import Any, List
 
 import asyncclick as click
 import grpc
+from frequenz.channels import Receiver
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import NestedCompleter
 from prompt_toolkit.history import FileHistory
@@ -26,7 +27,7 @@ from ._cli_types import (
 )
 from ._client import Client
 from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
-from .types import Dispatch
+from .types import Dispatch, DispatchEvent
 
 DEFAULT_DISPATCH_API_URL = "grpc://fz-0004.frequenz.io:50051"
 
@@ -249,11 +250,15 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
 @click.argument("microgrid-id", required=True, type=int)
 async def stream(ctx: click.Context, microgrid_id: int) -> None:
     """Stream dispatches."""
-    async for message in ctx.obj["client"].stream(microgrid_id=microgrid_id):
+    event_stream: Receiver[DispatchEvent] = ctx.obj["client"].stream(
+        microgrid_id=microgrid_id
+    )
+    async for message in event_stream:
         if ctx.obj["raw"]:
             click.echo(pformat(message, compact=True))
         else:
-            print_dispatch(message)
+            print(f"Dispatch {message.event.name.lower()}")
+            print_dispatch(message.dispatch)
 
 
 def parse_recurrence(kwargs: dict[str, Any]) -> RecurrenceRule | None:
