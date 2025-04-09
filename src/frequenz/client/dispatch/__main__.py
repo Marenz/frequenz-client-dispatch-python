@@ -148,6 +148,7 @@ def print_dispatch(dispatch: Dispatch) -> None:
         lines.append(format_line("Recurrence", "None"))
     lines.append(format_line("Create Time", format_datetime(dispatch.create_time)))
     lines.append(format_line("Update Time", format_datetime(dispatch.update_time)))
+    lines.append(format_line("End    Time", format_datetime(dispatch.end_time)))
 
     # Combine all lines
     dispatch_info: str = "\n".join(lines)

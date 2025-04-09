@@ -38,6 +38,7 @@ def _update_metadata(dispatch: Dispatch, created: Dispatch) -> Dispatch:
         id=created.id,
         create_time=created.create_time,
         update_time=created.update_time,
+        end_time=created.end_time,
     )
 
 
