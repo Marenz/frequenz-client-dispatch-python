@@ -425,9 +425,7 @@ async def create(
     click.echo("Dispatch created.")
 
 
-# We could fix the mypy error by using ", /", but this causes issues with
-# the click decorators. We can ignore the error here.
-@cli.command()  # type: ignore[arg-type]
+@cli.command()
 @click.argument("microgrid-id", required=True, type=int)
 @click.argument("dispatch_id", type=int)
 @click.option("--start-time", type=FuzzyDateTime())
@@ -441,6 +439,7 @@ async def create(
 @click.pass_context
 async def update(
     ctx: click.Context,
+    /,
     microgrid_id: int,
     dispatch_id: int,
     **new_fields: dict[str, Any],
