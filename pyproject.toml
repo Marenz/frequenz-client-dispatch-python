@@ -5,7 +5,7 @@
 requires = [
   "setuptools == 75.8.0",
   "setuptools_scm[toml] == 8.1.0",
-  "frequenz-repo-config[lib] == 0.11.0",
+  "frequenz-repo-config[lib] == 0.13.2",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -53,26 +53,31 @@ name = "Frequenz Energy-as-a-Service GmbH"
 email = "floss@frequenz.com"
 
 [project.optional-dependencies]
-cli = ["asyncclick == 8.1.8", "prompt-toolkit == 3.0.50", "parsedatetime==2.6", "tzlocal==5.2"]
+cli = [
+  "asyncclick == 8.1.8",
+  "prompt-toolkit == 3.0.50",
+  "parsedatetime == 2.6",
+  "tzlocal == 5.2",
+]
 
 dev-flake8 = [
   "flake8 == 7.1.1",
   "flake8-docstrings == 1.7.0",
-  "flake8-pyproject == 1.2.3",  # For reading the flake8 config from pyproject.toml
+  "flake8-pyproject == 1.2.3", # For reading the flake8 config from pyproject.toml
   "pydoclint == 0.6.0",
   "pydocstyle == 6.3.0",
 ]
 dev-formatting = ["black == 25.1.0", "isort == 6.0.1"]
 dev-mkdocs = [
   "black == 25.1.0",
-  "Markdown==3.7",
+  "Markdown == 3.7",
   "mike == 2.1.3",
   "mkdocs-gen-files == 0.5.0",
   "mkdocs-literate-nav == 0.6.1",
   "mkdocs-macros-plugin == 1.3.7",
   "mkdocs-material == 9.6.1",
-  "mkdocstrings[python] == 0.27.0",
-  "frequenz-repo-config[lib] == 0.11.0",
+  "mkdocstrings[python] == 0.29.1",
+  "frequenz-repo-config[lib] == 0.13.2",
 ]
 dev-mypy = [
   "mypy == 1.14.1",
@@ -83,7 +88,7 @@ dev-mypy = [
   "types-protobuf == 5.29.1.20250208",
   "types-python-dateutil == 2.9.0.20241206",
 ]
-dev-noxfile = ["nox == 2025.2.9", "frequenz-repo-config[lib] == 0.11.0"]
+dev-noxfile = ["nox == 2025.2.9", "frequenz-repo-config[lib] == 0.13.2"]
 dev-pylint = [
   "pylint == 3.3.4",
   # For checking the noxfile, docs/ script, and tests
@@ -92,7 +97,7 @@ dev-pylint = [
 ]
 dev-pytest = [
   "pytest == 8.3.4",
-  "frequenz-repo-config[extra-lint-examples] == 0.11.0",
+  "frequenz-repo-config[extra-lint-examples] == 0.13.2",
   "pytest-mock == 3.14.0",
   "pytest-asyncio == 0.25.3",
   "async-solipsism == 0.7",
@@ -169,6 +174,7 @@ disable = [
 ]
 
 [tool.pytest.ini_options]
+addopts = "-W=all -Werror -Wdefault::DeprecationWarning -Wdefault::PendingDeprecationWarning -vv"
 testpaths = ["tests", "src"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
@@ -195,4 +201,4 @@ version_scheme = "post-release"
 
 # Add our own root certificate until we have an official one
 [tool.setuptools.package-data]
-"frequenz.client.dispatch"= ["certs/root.crt"]
+"frequenz.client.dispatch" = ["certs/root.crt"]
