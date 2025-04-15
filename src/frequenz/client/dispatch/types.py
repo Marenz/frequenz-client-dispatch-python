@@ -158,6 +158,12 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
     update_time: datetime
     """The last update time of the dispatch in UTC. Set when a dispatch is modified."""
 
+    end_time: datetime | None = None
+    """The end time of the dispatch in UTC.
+
+    Calculated and sent by the backend service.
+    """
+
     @property
     def started(self) -> bool:
         """Check if the dispatch has started.
@@ -290,6 +296,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             type=pb_object.data.type,
             create_time=to_datetime(pb_object.metadata.create_time),
             update_time=to_datetime(pb_object.metadata.modification_time),
+            end_time=to_datetime(pb_object.metadata.end_time),
             start_time=to_datetime(pb_object.data.start_time),
             duration=(
                 timedelta(seconds=pb_object.data.duration)
@@ -317,6 +324,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 dispatch_id=self.id,
                 create_time=to_timestamp(self.create_time),
                 modification_time=to_timestamp(self.update_time),
+                end_time=to_timestamp(self.end_time),
             ),
             data=DispatchData(
                 type=self.type,

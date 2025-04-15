@@ -7,6 +7,7 @@ import asyncio
 import random
 from dataclasses import replace
 from datetime import timedelta
+from functools import partial
 
 import grpc
 from pytest import raises
@@ -38,6 +39,7 @@ def _update_metadata(dispatch: Dispatch, created: Dispatch) -> Dispatch:
         id=created.id,
         create_time=created.create_time,
         update_time=created.update_time,
+        end_time=created.end_time,
     )
 
 
@@ -97,7 +99,16 @@ async def test_list_dispatches(
     dispatches = client.list(microgrid_id=1)
     async for page in dispatches:
         for dispatch in page:
-            assert dispatch in client.dispatches(microgrid_id=1)
+            # First find matching id in client.dispatches, then compare
+            service_side_dispatch = next(
+                filter(
+                    partial(lambda d, md: d.id == md.id, md=dispatch),
+                    client.dispatches(microgrid_id=1),
+                ),
+                None,
+            )
+
+            assert dispatch == service_side_dispatch
 
 
 async def test_list_dispatches_no_duration(
