@@ -7,3 +7,4 @@
 ## Bug Fixes
 
 * Fix that `dispatch-cli stream` would try to print an event as dispatch, causing an exception.
+* Fix that `stream()` would not reconnect and just closes the channel upon disconnection.
