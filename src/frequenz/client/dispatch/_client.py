@@ -241,7 +241,7 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
                     ),
                 ),
                 transform=DispatchEvent.from_protobuf,
-                retry_strategy=LinearBackoff(interval=1, limit=0),
+                retry_strategy=LinearBackoff(interval=1, limit=None),
             )
             self._streams[microgrid_id] = broadcaster
 
