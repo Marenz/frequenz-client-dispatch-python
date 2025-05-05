@@ -52,7 +52,7 @@ from .types import (
 DEFAULT_DISPATCH_PORT = 50051
 
 
-class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
+class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
     """Dispatch API client."""
 
     def __init__(
@@ -125,7 +125,7 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
         Example usage:
 
         ```python
-        client = Client(key="key", server_url="grpc://fz-0004.frequenz.io")
+        client = DispatchApiClient(key="key", server_url="grpc://fz-0004.frequenz.io")
         async for page in client.list(microgrid_id=1):
             for dispatch in page:
                 print(dispatch)
@@ -207,7 +207,7 @@ class Client(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
         Example usage:
 
         ```
-        client = Client(key="key", server_url="grpc://fz-0004.frequenz.io")
+        client = DispatchApiClient(key="key", server_url="grpc://fz-0004.frequenz.io")
         async for message in client.stream(microgrid_id=1):
             print(message.event, message.dispatch)
         ```
