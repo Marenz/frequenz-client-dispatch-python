@@ -25,7 +25,7 @@ from ._cli_types import (
     JsonDictParamType,
     TargetComponentParamType,
 )
-from ._client import Client
+from ._client import DispatchApiClient
 from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
 from .types import Dispatch, DispatchEvent
 
@@ -193,7 +193,7 @@ async def cli(ctx: click.Context, url: str, key: str, raw: bool) -> None:
 
     click.echo(f"Using API URL: {url}", err=True)
 
-    ctx.obj["client"] = Client(
+    ctx.obj["client"] = DispatchApiClient(
         server_url=url,
         key=key,
         connect=True,

@@ -5,14 +5,14 @@
 
 from typing import Any
 
-from .. import Client
+from .. import DispatchApiClient
 from ..types import Dispatch
 from ._service import ALL_KEY, NONE_KEY, FakeService
 
 __all__ = ["FakeClient", "to_create_params", "ALL_KEY", "NONE_KEY"]
 
 
-class FakeClient(Client):
+class FakeClient(DispatchApiClient):
     """Fake client for testing.
 
     This client uses a fake service to simulate the dispatch api.

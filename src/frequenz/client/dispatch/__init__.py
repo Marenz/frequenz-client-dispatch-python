@@ -3,6 +3,6 @@
 
 """Dispatch API client for Python."""
 
-from ._client import Client
+from ._client import DispatchApiClient
 
-__all__ = ["Client"]
+__all__ = ["DispatchApiClient"]
