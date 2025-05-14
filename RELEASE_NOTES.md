@@ -6,7 +6,7 @@
 
 ## Bug Fixes
 
-* `end_time` was not correctly handling the `None` value when converted from protobuf to pythons `Dispatch` class.
+* Fix that a user might see invalid values for dispatches without `end_time`. It was not correctly handling the `None` value when converted from protobuf to pythons `Dispatch` class.
 
 ## Upgrading
 
