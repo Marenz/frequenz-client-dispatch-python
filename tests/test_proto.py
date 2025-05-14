@@ -132,6 +132,26 @@ def test_dispatch() -> None:
                 byweekdays=[Weekday.SUNDAY, Weekday.FRIDAY],
             ),
         ),
+        Dispatch(
+            id=125,
+            type="test-3",
+            create_time=datetime(2024, 3, 10, tzinfo=timezone.utc),
+            update_time=datetime(2024, 3, 11, tzinfo=timezone.utc),
+            start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
+            end_time=None,
+            duration=timedelta(seconds=20),
+            target=[ComponentCategory.BATTERY],
+            active=False,
+            dry_run=True,
+            payload={"key": "value1"},
+            recurrence=RecurrenceRule(
+                frequency=Frequency.MONTHLY,
+                interval=3,
+                end_criteria=EndCriteria(count=20),
+                byhours=[1, 12, 23],
+                byweekdays=[Weekday.SUNDAY, Weekday.FRIDAY],
+            ),
+        ),
     ):
         assert Dispatch.from_protobuf(dispatch.to_protobuf()) == dispatch
 

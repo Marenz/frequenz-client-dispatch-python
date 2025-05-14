@@ -296,7 +296,11 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             type=pb_object.data.type,
             create_time=to_datetime(pb_object.metadata.create_time),
             update_time=to_datetime(pb_object.metadata.modification_time),
-            end_time=to_datetime(pb_object.metadata.end_time),
+            end_time=(
+                to_datetime(pb_object.metadata.end_time)
+                if pb_object.metadata.HasField("end_time")
+                else None
+            ),
             start_time=to_datetime(pb_object.data.start_time),
             duration=(
                 timedelta(seconds=pb_object.data.duration)
@@ -324,7 +328,9 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 dispatch_id=self.id,
                 create_time=to_timestamp(self.create_time),
                 modification_time=to_timestamp(self.update_time),
-                end_time=to_timestamp(self.end_time),
+                end_time=(
+                    to_timestamp(self.end_time) if self.end_time is not None else None
+                ),
             ),
             data=DispatchData(
                 type=self.type,
