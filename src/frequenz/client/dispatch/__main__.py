@@ -29,8 +29,6 @@ from ._client import DispatchApiClient
 from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
 from .types import Dispatch, DispatchEvent
 
-DEFAULT_DISPATCH_API_URL = "grpc://dispatch.url.goes.here.example.com"
-
 
 def format_datetime(dt: datetime | None) -> str:
     """Format datetime object to a readable string, or return 'N/A' if None."""
@@ -165,11 +163,9 @@ def print_dispatch(dispatch: Dispatch) -> None:
 @click.group(invoke_without_command=True)
 @click.option(
     "--url",
-    default=DEFAULT_DISPATCH_API_URL,
     help="Dispatch API Url",
     envvar="DISPATCH_API_URL",
     show_envvar=True,
-    show_default=True,
 )
 @click.option(
     "--key",
