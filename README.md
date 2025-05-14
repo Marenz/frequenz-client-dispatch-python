@@ -23,12 +23,12 @@ pip install frequenz-client-dispatch
 Here's a quick example to get you started:
 
 ```python
-from frequenz.client.dispatch import Client
+from frequenz.client.dispatch import DispatchApiClient
 import asyncio
 
 async def print_dispatches():
     # Initialize the client
-    client = Client(key="your_api_key", server_url="grpc://dispatch.url.goes.here.example.com")
+    client = DispatchApiClient(key="your_api_key", server_url="grpc://dispatch.url.goes.here.example.com")
 
     # List all dispatches for a specific microgrid
     async for page in client.list(microgrid_id=1):
@@ -39,7 +39,7 @@ async def print_dispatches():
 asyncio.run(print_dispatches())
 ```
 
-For detailed usage and advanced features, check out the [client documentation](https://frequenz-floss.github.io/frequenz-client-dispatch-python/latest/reference/frequenz/client/dispatch/#frequenz.client.dispatch.Client).
+For detailed usage and advanced features, check out the [client documentation](https://frequenz-floss.github.io/frequenz-client-dispatch-python/latest/reference/frequenz/client/dispatch/#frequenz.client.dispatch.ApiDispatchClient).
 
 ## 🌐 Supported Platforms
 
