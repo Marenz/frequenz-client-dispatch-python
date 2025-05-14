@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from importlib.resources import files
-from pathlib import Path
 from typing import Any, AsyncIterator, Awaitable, Iterator, Literal, cast
 
 # pylint: disable=no-name-in-module
@@ -49,7 +47,7 @@ from .types import (
 )
 
 # pylint: enable=no-name-in-module
-DEFAULT_DISPATCH_PORT = 50051
+DEFAULT_DISPATCH_PORT = 443
 
 
 class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchServiceStub]):
@@ -75,14 +73,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             connect=connect,
             channel_defaults=ChannelOptions(
                 port=DEFAULT_DISPATCH_PORT,
-                ssl=SslOptions(
-                    enabled=True,
-                    root_certificates=Path(
-                        str(
-                            files("frequenz.client.dispatch").joinpath("certs/root.crt")
-                        ),
-                    ),
-                ),
+                ssl=SslOptions(enabled=True),
             ),
         )
         self._metadata = (("key", key),)
@@ -125,7 +116,10 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         Example usage:
 
         ```python
-        client = DispatchApiClient(key="key", server_url="grpc://fz-0004.frequenz.io")
+        client = DispatchApiClient(
+            key="key",
+            server_url="grpc://dispatch.url.goes.here.example.com"
+        )
         async for page in client.list(microgrid_id=1):
             for dispatch in page:
                 print(dispatch)
@@ -207,7 +201,10 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         Example usage:
 
         ```
-        client = DispatchApiClient(key="key", server_url="grpc://fz-0004.frequenz.io")
+        client = DispatchApiClient(
+            key="key",
+            server_url="grpc://dispatch.url.goes.here.example.com"
+        )
         async for message in client.stream(microgrid_id=1):
             print(message.event, message.dispatch)
         ```

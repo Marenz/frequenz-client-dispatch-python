@@ -28,7 +28,7 @@ import asyncio
 
 async def print_dispatches():
     # Initialize the client
-    client = Client(key="your_api_key", server_url="grpc://fz-0004.frequenz.io")
+    client = Client(key="your_api_key", server_url="grpc://dispatch.url.goes.here.example.com")
 
     # List all dispatches for a specific microgrid
     async for page in client.list(microgrid_id=1):

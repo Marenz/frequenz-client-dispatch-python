@@ -29,7 +29,7 @@ from ._client import DispatchApiClient
 from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
 from .types import Dispatch, DispatchEvent
 
-DEFAULT_DISPATCH_API_URL = "grpc://fz-0004.frequenz.io:50051"
+DEFAULT_DISPATCH_API_URL = "grpc://dispatch.url.goes.here.example.com"
 
 
 def format_datetime(dt: datetime | None) -> str:
