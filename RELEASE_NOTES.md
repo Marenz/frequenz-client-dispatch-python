@@ -10,7 +10,7 @@
 
 ## New Features
 
-<!-- Here goes the main new features and examples or instructions on how to use them -->
+* `dispatch-cli` supports now the parameter `--type` and `--running` to filter the list of running services by type and status, respectively.
 
 ## Bug Fixes
 
