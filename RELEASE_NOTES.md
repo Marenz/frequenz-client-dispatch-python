@@ -1,10 +1,17 @@
 # Frequenz Dispatch Client Library Release Notes
 
+## Summary
 
-## Bug Fixes
-
-* Fix cli client trying to use a invalid default URL when none is given.
+<!-- Here goes a general summary of what this release is about -->
 
 ## Upgrading
 
-* You now must always provide the URL to the dispatch client.
+<!-- Here goes notes on how to upgrade from previous versions, including deprecations and what they should be replaced with -->
+
+## New Features
+
+<!-- Here goes the main new features and examples or instructions on how to use them -->
+
+## Bug Fixes
+
+<!-- Here goes notable bug fixes that are worth a special mention or explanation -->
