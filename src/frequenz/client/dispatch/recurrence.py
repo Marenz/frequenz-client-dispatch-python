@@ -88,8 +88,8 @@ class EndCriteria:
         match pb_criteria.WhichOneof("count_or_until"):
             case "count":
                 instance.count = pb_criteria.count
-            case "until":
-                instance.until = to_datetime(pb_criteria.until)
+            case "until_time":
+                instance.until = to_datetime(pb_criteria.until_time)
         return instance
 
     def to_protobuf(self) -> PBRecurrenceRule.EndCriteria:
@@ -103,7 +103,7 @@ class EndCriteria:
         if self.count is not None:
             pb_criteria.count = self.count
         elif self.until is not None:
-            pb_criteria.until.CopyFrom(to_timestamp(self.until))
+            pb_criteria.until_time.CopyFrom(to_timestamp(self.until))
 
         return pb_criteria
 

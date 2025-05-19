@@ -166,7 +166,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         ) -> PBTimeIntervalFilter | None:
             return (
                 PBTimeIntervalFilter(
-                    **{"from": to_timestamp(from_)}, to=to_timestamp(to)
+                    from_time=to_timestamp(from_), to_time=to_timestamp(to)
                 )
                 if from_ or to
                 else None
