@@ -11,7 +11,7 @@ import time_machine
 
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch.recurrence import Frequency, RecurrenceRule, Weekday
-from frequenz.client.dispatch.types import Dispatch
+from frequenz.client.dispatch.types import Dispatch, TargetCategories, TargetIds
 
 # Define a fixed current time for testing to avoid issues with datetime.now()
 CURRENT_TIME = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -25,7 +25,7 @@ def dispatch_base() -> Dispatch:
         type="TypeA",
         start_time=CURRENT_TIME,
         duration=timedelta(minutes=20),
-        target=[ComponentCategory.BATTERY],
+        target=TargetCategories(ComponentCategory.BATTERY),
         active=True,
         dry_run=False,
         payload={},
@@ -255,3 +255,14 @@ def test_dispatch_next_run_after(
         expected_next_run_after = None
 
     assert dispatch.next_run_after(after) == expected_next_run_after
+
+
+def test_target_ids_from_cid() -> None:
+    """Test using TargetIDs with ComponentIds."""
+
+    class ComponentId(int):
+        """Mock ComponentId class for testing."""
+
+    target = TargetIds(ComponentId(1), ComponentId(2), ComponentId(3))
+
+    assert target == TargetIds(1, 2, 3)

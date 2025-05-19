@@ -10,7 +10,16 @@ from frequenz.client.common.microgrid.components import ComponentCategory
 
 from .._internal_types import rounded_start_time
 from ..recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
-from ..types import Dispatch
+from ..types import (
+    BatteryType,
+    Dispatch,
+    EvChargerType,
+    InverterType,
+    TargetCategories,
+    TargetCategory,
+    TargetComponents,
+    TargetIds,
+)
 
 
 class DispatchGenerator:
@@ -66,6 +75,27 @@ class DispatchGenerator:
             ],
         )
 
+    def generate_target_category_and_type(self) -> TargetCategory:
+        """Generate a random category and type.
+
+        Returns:
+            a random category and type
+        """
+        category = self._rng.choice(list(ComponentCategory)[1:])
+        category_type: BatteryType | InverterType | EvChargerType | None = None
+
+        match category:
+            case ComponentCategory.BATTERY:
+                category_type = self._rng.choice(list(BatteryType)[1:])
+            case ComponentCategory.INVERTER:
+                category_type = self._rng.choice(list(InverterType)[1:])
+            case ComponentCategory.EV_CHARGER:
+                category_type = self._rng.choice(list(EvChargerType)[1:])
+            case _:
+                category_type = None
+
+        return TargetCategory(category_type or category)
+
     def generate_dispatch(self) -> Dispatch:
         """Generate a random dispatch instance.
 
@@ -76,6 +106,20 @@ class DispatchGenerator:
         create_time = datetime.fromtimestamp(
             self._rng.randint(0, 1000000), tz=timezone.utc
         )
+
+        target_choices: list[TargetComponents] = [
+            TargetIds(
+                *[self._rng.randint(1, 100) for _ in range(self._rng.randint(1, 10))]
+            ),
+            TargetCategories(
+                *[
+                    # Not yet used
+                    # self.generate_target_category_and_type()
+                    self._rng.choice(list(ComponentCategory)[1:])
+                    for _ in range(self._rng.randint(1, 10))
+                ]
+            ),
+        ]
 
         return Dispatch(
             id=self._last_id,
@@ -92,18 +136,7 @@ class DispatchGenerator:
                     timedelta(seconds=self._rng.randint(0, 1000000)),
                 ]
             ),
-            target=self._rng.choice(  # type: ignore
-                [
-                    [
-                        self._rng.choice(list(ComponentCategory)[1:])
-                        for _ in range(self._rng.randint(1, 10))
-                    ],
-                    [
-                        self._rng.randint(1, 100)
-                        for _ in range(self._rng.randint(1, 10))
-                    ],
-                ]
-            ),
+            target=self._rng.choice(target_choices),
             active=self._rng.choice([True, False]),
             dry_run=self._rng.choice([True, False]),
             payload={

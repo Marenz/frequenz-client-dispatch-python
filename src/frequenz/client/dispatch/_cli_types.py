@@ -5,6 +5,7 @@
 
 import json
 from datetime import datetime, timedelta, timezone
+from itertools import chain
 from typing import Any, Literal, cast
 
 import asyncclick as click
@@ -12,6 +13,14 @@ import parsedatetime  # type: ignore
 from tzlocal import get_localzone
 
 from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.dispatch.types import (
+    BatteryType,
+    EvChargerType,
+    InverterType,
+    TargetCategories,
+    TargetComponents,
+    TargetIds,
+)
 
 # Disable a false positive from pylint
 # pylint: disable=inconsistent-return-statements
@@ -140,7 +149,7 @@ class TargetComponentParamType(click.ParamType):
 
     def convert(
         self, value: Any, param: click.Parameter | None, ctx: click.Context | None
-    ) -> list[ComponentCategory] | list[int]:
+    ) -> TargetIds | TargetCategories:
         """Convert the input value into a list of ComponentCategory or IDs.
 
         Args:
@@ -149,9 +158,9 @@ class TargetComponentParamType(click.ParamType):
             ctx: The Click context object.
 
         Returns:
-            A list of component ids or component categories.
+            A list of targets, either as component IDs or component categories.
         """
-        if isinstance(value, list):  # Already a list
+        if isinstance(value, TargetComponents):
             return value
 
         values = value.split(",")
@@ -162,20 +171,46 @@ class TargetComponentParamType(click.ParamType):
         error: Exception | None = None
         # Attempt to parse component ids
         try:
-            return [int(id) for id in values]
+            return TargetIds(*[int(id) for id in values])
         except ValueError as e:
             error = e
 
+        def enum_from_str(
+            name: str,
+        ) -> InverterType | BatteryType | EvChargerType | ComponentCategory:
+            """Convert a string to an enum member."""
+            name = name.strip().upper()
+            if name in ComponentCategory.__members__:
+                return ComponentCategory[name]
+            if name in InverterType.__members__:
+                return InverterType[name]
+            if name in BatteryType.__members__:
+                return BatteryType[name]
+            if name in EvChargerType.__members__:
+                return EvChargerType[name]
+            raise KeyError(f"Invalid target specification: {name}")
+
         # Attempt to parse as component categories, trim whitespace
         try:
-            return [ComponentCategory[cat.strip().upper()] for cat in values]
+            return TargetCategories(*[enum_from_str(cat) for cat in values])
         except KeyError as e:
             error = e
+
+        types_str = ", ".join(
+            [f"{type.name}" for type in chain(BatteryType, InverterType, EvChargerType)]
+        )
 
         self.fail(
             f'Invalid component category list or ID list: "{value}".\n'
             f'Error: "{error}"\n\n'
-            "Possible categories: BATTERY, GRID, METER, INVERTER, EV_CHARGER, CHP ",
+            "Valid formats:\n"
+            "- 1,2,3 # A list of component IDs\n"
+            "- METER,INVERTER # A list of component categories\n"
+            "- NA_ION,SOLAR # A list of component category types (category is derived)\n"
+            "Valid categories:\n"
+            f"{', '.join([cat.name for cat in ComponentCategory])}\n"
+            "Valid types:\n"
+            f"{types_str}\n",
             param,
             ctx,
         )
