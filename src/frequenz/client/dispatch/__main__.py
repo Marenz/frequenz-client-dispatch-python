@@ -218,6 +218,8 @@ async def cli(ctx: click.Context, url: str, key: str, raw: bool) -> None:
 @click.option("--active", type=bool)
 @click.option("--dry-run", type=bool)
 @click.option("--page-size", type=int)
+@click.option("--running", type=bool)
+@click.option("--type", "-T", type=str)
 async def list_(ctx: click.Context, /, **filters: Any) -> None:
     """List dispatches.
 
@@ -225,21 +227,33 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
 
     The target option can be given multiple times.
     """
+    filter_running: bool = filters.pop("running", False)
+    filter_type: str | None = filters.pop("type", None)
+
     if "target" in filters:
         target = filters.pop("target")
         # Name of the parameter in client.list()
         filters["target_components"] = target
 
     num_dispatches = 0
+    num_filtered = 0
     async for page in ctx.obj["client"].list(**filters):
         for dispatch in page:
+            if filter_running and not dispatch.started:
+                num_filtered += 1
+                continue
+
+            if filter_type and dispatch.type != filter_type:
+                num_filtered += 1
+                continue
+
             if ctx.obj["raw"]:
                 click.echo(pformat(dispatch, compact=True))
             else:
                 print_dispatch(dispatch)
             num_dispatches += 1
 
-    click.echo(f"{num_dispatches} dispatches total.")
+    click.echo(f"{num_dispatches} dispatches, {num_filtered} filtered out.")
 
 
 @cli.command("stream")

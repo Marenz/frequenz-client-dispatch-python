@@ -79,10 +79,10 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                 ]
             },
             1,
-            "1 dispatches total.",
+            "1 dispatches, 0 filtered out",
             0,
         ),
-        ({}, 1, "0 dispatches total.", 0),
+        ({}, 1, "0 dispatches, 0 filtered out", 0),
         (
             {
                 2: [
@@ -102,7 +102,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                 ]
             },
             1,
-            "0 dispatches total.",
+            "0 dispatches, 0 filtered out",
             0,
         ),
         (
@@ -139,7 +139,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                 ],
             },
             1,
-            "1 dispatches total.",
+            "1 dispatches, 0 filtered out",
             0,
         ),
         (
@@ -147,6 +147,41 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
             "x",
             "Error: Invalid value for 'MICROGRID_ID': 'x' is not a valid integer.",
             2,
+        ),
+        (
+            {
+                1: [
+                    Dispatch(
+                        id=1,
+                        type="test",
+                        start_time=datetime(2023, 1, 1, 0, 0, 0),
+                        duration=timedelta(seconds=3600),
+                        target=[1, 2, 3],
+                        active=True,
+                        dry_run=False,
+                        payload={},
+                        recurrence=RecurrenceRule(),
+                        create_time=datetime(2023, 1, 1, 0, 0, 0),
+                        update_time=datetime(2023, 1, 1, 0, 0, 0),
+                    ),
+                    Dispatch(
+                        id=2,
+                        type="filtered",
+                        start_time=datetime(2023, 1, 1, 0, 0, 0),
+                        duration=timedelta(seconds=1800),
+                        target=[3],
+                        active=True,
+                        dry_run=False,
+                        payload={},
+                        recurrence=RecurrenceRule(),
+                        create_time=datetime(2023, 1, 1, 0, 0, 0),
+                        update_time=datetime(2023, 1, 1, 0, 0, 0),
+                    ),
+                ],
+            },
+            1,
+            "1 dispatches, 1 filtered out",
+            0,
         ),
     ],
 )
@@ -163,7 +198,9 @@ async def test_list_command(
         fake_client.set_dispatches(microgrid_id_, dispatch_list)
 
     result = await runner.invoke(
-        cli, ["--raw", "list", str(microgrid_id)], env=ENVIRONMENT_VARIABLES
+        cli,
+        ["--raw", "list", str(microgrid_id), "--type", "test"],
+        env=ENVIRONMENT_VARIABLES,
     )
     assert expected_output in result.output
     assert result.exit_code == expected_return_code
