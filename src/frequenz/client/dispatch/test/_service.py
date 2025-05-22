@@ -112,13 +112,17 @@ class FakeService:
 
     # pylint: disable=invalid-name
     async def ListMicrogridDispatches(
-        self, request: ListMicrogridDispatchesRequest, metadata: grpc.aio.Metadata
+        self,
+        request: ListMicrogridDispatchesRequest,
+        metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> ListMicrogridDispatchesResponse:
         """List microgrid dispatches.
 
         Args:
             request: The request.
             metadata: The metadata.
+            timeout: timeout for the request, ignored in this mock.
 
         Returns:
             The dispatch list.
@@ -141,13 +145,17 @@ class FakeService:
         )
 
     async def StreamMicrogridDispatches(
-        self, request: StreamMicrogridDispatchesRequest, metadata: grpc.aio.Metadata
+        self,
+        request: StreamMicrogridDispatchesRequest,
+        metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> AsyncIterator[StreamMicrogridDispatchesResponse]:
         """Stream microgrid dispatches changes.
 
         Args:
             request: The request.
             metadata: The metadata.
+            timeout: timeout for the request, ignored in this mock.
 
         Returns:
             An async generator for dispatch changes.
@@ -212,6 +220,7 @@ class FakeService:
         self,
         request: PBDispatchCreateRequest,
         metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> CreateMicrogridDispatchResponse:
         """Create a new dispatch."""
         self._check_access(metadata)
@@ -240,6 +249,7 @@ class FakeService:
         self,
         request: UpdateMicrogridDispatchRequest,
         metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> UpdateMicrogridDispatchResponse:
         """Update a dispatch."""
         self._check_access(metadata)
@@ -327,6 +337,7 @@ class FakeService:
         self,
         request: GetMicrogridDispatchRequest,
         metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> GetMicrogridDispatchResponse:
         """Get a single dispatch."""
         self._check_access(metadata)
@@ -349,6 +360,7 @@ class FakeService:
         self,
         request: DeleteMicrogridDispatchRequest,
         metadata: grpc.aio.Metadata,
+        timeout: int = 5,  # pylint: disable=unused-argument
     ) -> Empty:
         """Delete a given dispatch."""
         self._check_access(metadata)
