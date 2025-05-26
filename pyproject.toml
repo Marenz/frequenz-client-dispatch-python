@@ -38,9 +38,9 @@ requires-python = ">= 3.11, < 4"
 dependencies = [
   "typing-extensions >= 4.6.1, < 5",
   "frequenz-api-dispatch == 1.0.0-rc1",
-  "frequenz-client-base >= 0.8.0, < 0.10.0",
+  "frequenz-client-base >= 0.8.0, < 0.12.0",
   "frequenz-client-common >= 0.1.0, < 0.4.0",
-  "grpcio >= 1.66.1, < 2",
+  "grpcio >= 1.70.0, < 2",
   "python-dateutil >= 2.8.2, < 3.0",
 ]
 dynamic = ["version"]
