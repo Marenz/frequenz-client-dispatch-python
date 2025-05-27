@@ -198,7 +198,3 @@ ignore_missing_imports = true
 
 [tool.setuptools_scm]
 version_scheme = "post-release"
-
-# Add our own root certificate until we have an official one
-[tool.setuptools.package-data]
-"frequenz.client.dispatch" = ["certs/root.crt"]
