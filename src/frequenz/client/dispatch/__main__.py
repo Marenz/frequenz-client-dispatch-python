@@ -86,7 +86,8 @@ def print_dispatch(dispatch: Dispatch) -> None:
     # Format the target
     if dispatch.target:
         if len(dispatch.target) == 1:
-            target_str: str = str(dispatch.target[0])
+            (first_element,) = dispatch.target
+            target_str: str = str(first_element)
         else:
             target_str = ", ".join(str(s) for s in dispatch.target)
     else:

@@ -14,23 +14,39 @@ from frequenz.client.dispatch.recurrence import (
     Weekday,
 )
 from frequenz.client.dispatch.types import (
+    BatteryType,
     Dispatch,
+    EvChargerType,
+    InverterType,
+    TargetCategories,
+    TargetCategory,
+    TargetIds,
     _target_components_from_protobuf,
-    _target_components_to_protobuf,
+    _target_components_to_protobuf_new,
 )
 
+CaT = TargetCategory
+"""Shortcut for the lazy."""
 
-def test_target_components() -> None:
+
+def test_target_components_new() -> None:
     """Test the target components."""
     for components in (
-        [1, 2, 3],
-        [10, 20, 30],
-        [ComponentCategory.BATTERY],
-        [ComponentCategory.GRID],
-        [ComponentCategory.METER],
-        [ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY],
+        TargetIds(1, 2, 3),
+        TargetIds(10, 20, 30),
+        TargetCategories(ComponentCategory.BATTERY),
+        TargetCategories(ComponentCategory.GRID),
+        TargetCategories(ComponentCategory.METER),
+        TargetCategories(ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY),
+        TargetCategories(TargetCategory(BatteryType.LI_ION)),
+        TargetCategories(
+            TargetCategory(BatteryType.NA_ION),
+            TargetCategory(InverterType.SOLAR),
+            TargetCategory(EvChargerType.AC),
+            TargetCategory(ComponentCategory.METER),
+        ),
     ):
-        protobuf = _target_components_to_protobuf(components)
+        protobuf = _target_components_to_protobuf_new(components)
         assert _target_components_from_protobuf(protobuf) == components
 
 
@@ -99,7 +115,7 @@ def test_dispatch() -> None:
             start_time=datetime(2024, 10, 10, tzinfo=timezone.utc),
             end_time=datetime(2024, 10, 20, tzinfo=timezone.utc),
             duration=timedelta(days=10),
-            target=[1, 2, 3],
+            target=TargetIds(1, 2, 3),
             active=True,
             dry_run=False,
             payload={"key": "value"},
@@ -120,7 +136,7 @@ def test_dispatch() -> None:
             start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
             end_time=datetime(2024, 11, 20, tzinfo=timezone.utc),
             duration=timedelta(seconds=20),
-            target=[ComponentCategory.BATTERY],
+            target=TargetCategories(ComponentCategory.BATTERY),
             active=False,
             dry_run=True,
             payload={"key": "value1"},
@@ -140,7 +156,7 @@ def test_dispatch() -> None:
             start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
             end_time=None,
             duration=timedelta(seconds=20),
-            target=[ComponentCategory.BATTERY],
+            target=TargetCategories(ComponentCategory.BATTERY),
             active=False,
             dry_run=True,
             payload={"key": "value1"},
@@ -163,7 +179,7 @@ def test_dispatch_create_request_with_no_recurrence() -> None:
         type="test",
         start_time=datetime(2024, 10, 10, tzinfo=timezone.utc),
         duration=timedelta(days=10),
-        target=[1, 2, 3],
+        target=TargetIds(1, 2, 3),
         active=True,
         dry_run=False,
         payload={"key": "value"},
@@ -180,7 +196,7 @@ def test_dispatch_create_start_immediately() -> None:
         type="test",
         start_time="NOW",
         duration=timedelta(days=10),
-        target=[1, 2, 3],
+        target=TargetIds(1, 2, 3),
         active=True,
         dry_run=False,
         payload={"key": "value"},

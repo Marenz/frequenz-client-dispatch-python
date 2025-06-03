@@ -6,8 +6,19 @@
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from enum import IntEnum
-from typing import Any, cast
+from enum import Enum
+from typing import Any, Self, SupportsInt, TypeAlias, cast
+
+# pylint: enable=no-name-in-module
+from frequenz.api.common.v1.microgrid.components.battery_pb2 import (
+    BatteryType as PBBatteryType,
+)
+from frequenz.api.common.v1.microgrid.components.ev_charger_pb2 import (
+    EvChargerType as PBEvChargerType,
+)
+from frequenz.api.common.v1.microgrid.components.inverter_pb2 import (
+    InverterType as PBInverterType,
+)
 
 # pylint: disable=no-name-in-module
 from frequenz.api.dispatch.v1.dispatch_pb2 import Dispatch as PBDispatch
@@ -21,16 +32,181 @@ from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
-
-# pylint: enable=no-name-in-module
 from frequenz.client.common.microgrid.components import ComponentCategory
 
 from .recurrence import Frequency, RecurrenceRule, Weekday
 
-TargetComponents = list[int] | list[ComponentCategory]
-"""One or more target components specifying which components a dispatch targets.
 
-It can be a list of component IDs or a list of categories.
+class EvChargerType(Enum):
+    """Enum representing the type of EV charger."""
+
+    UNSPECIFIED = PBEvChargerType.EV_CHARGER_TYPE_UNSPECIFIED
+    """Unspecified type of EV charger."""
+
+    AC = PBEvChargerType.EV_CHARGER_TYPE_AC
+    """AC EV charger."""
+
+    DC = PBEvChargerType.EV_CHARGER_TYPE_DC
+    """DC EV charger."""
+
+    HYBRID = PBEvChargerType.EV_CHARGER_TYPE_HYBRID
+    """Hybrid EV charger."""
+
+
+class BatteryType(Enum):
+    """Enum representing the type of battery."""
+
+    UNSPECIFIED = PBBatteryType.BATTERY_TYPE_UNSPECIFIED
+    """Unspecified type of battery."""
+
+    LI_ION = PBBatteryType.BATTERY_TYPE_LI_ION
+    """Lithium-ion battery."""
+
+    NA_ION = PBBatteryType.BATTERY_TYPE_NA_ION
+    """Sodium-ion battery."""
+
+
+class InverterType(Enum):
+    """Enum representing the type of inverter."""
+
+    UNSPECIFIED = PBInverterType.INVERTER_TYPE_UNSPECIFIED
+    """Unspecified type of inverter."""
+
+    BATTERY = PBInverterType.INVERTER_TYPE_BATTERY
+    """Battery inverter."""
+
+    SOLAR = PBInverterType.INVERTER_TYPE_SOLAR
+    """Solar inverter."""
+
+    HYBRID = PBInverterType.INVERTER_TYPE_HYBRID
+    """Hybrid inverter."""
+
+
+@dataclass(frozen=True)
+class TargetCategory:
+    """Represents a category and optionally a type."""
+
+    target: ComponentCategory | BatteryType | EvChargerType | InverterType
+    """The target category of the dispatch.
+
+    Implicitly derived from the types.
+    """
+
+    @property
+    def category(self) -> ComponentCategory:
+        """Get the category of the target.
+
+        Returns:
+            The category of the target.
+        """
+        match self.target:
+            case ComponentCategory():
+                return self.target
+            case BatteryType():
+                return ComponentCategory.BATTERY
+            case EvChargerType():
+                return ComponentCategory.EV_CHARGER
+            case InverterType():
+                return ComponentCategory.INVERTER
+
+    @property
+    def type(self) -> BatteryType | EvChargerType | InverterType | None:
+        """Get the type of the category.
+
+        Returns:
+            The type of the category.
+        """
+        match self.target:
+            case BatteryType() | EvChargerType() | InverterType():
+                return self.target
+            case _:
+                return None
+
+
+class TargetIds(frozenset[int]):
+    """A set of target component IDs.
+
+    This is a frozen set, so it is immutable.
+    """
+
+    def __new__(cls, *ids: SupportsInt) -> Self:
+        """Create a new TargetIds instance.
+
+        Args:
+            *ids: The target IDs to initialize.
+
+        Returns:
+            A new TargetIds instance.
+        """
+        # Convert all provided ids to integers before creating the frozenset
+        processed_ids = tuple(int(id_val) for id_val in ids)
+        return super().__new__(cls, processed_ids)
+
+
+# Define the union of types that can be passed to TargetCategories constructor
+TargetCategoryInputType = (
+    TargetCategory | ComponentCategory | BatteryType | InverterType | EvChargerType
+)
+"""Type for the input to TargetCategories constructor."""
+
+
+class TargetCategories(frozenset[TargetCategory]):
+    """A set of target component categories and types.
+
+    This is a frozen set, so it is immutable.
+    """
+
+    def __new__(cls, *categories_input: TargetCategoryInputType) -> Self:
+        """Create a new TargetCategories instance.
+
+        Args:
+            *categories_input: TargetCategory instances or raw ComponentCategory/specific types
+                               (BatteryType, InverterType, EvChargerType) to be wrapped.
+
+        Returns:
+            A new TargetCategories instance.
+
+        Raises:
+            TypeError: If an item in categories_input is not a TargetCategory
+                       nor one of the wrappable types.
+        """
+        processed_elements = []
+        for item in categories_input:
+            if isinstance(item, TargetCategory):
+                processed_elements.append(item)
+            elif isinstance(
+                item, (ComponentCategory, BatteryType, InverterType, EvChargerType)
+            ):
+                # Wrap raw categories/types into TargetCategory instances
+                processed_elements.append(TargetCategory(target=item))
+            else:
+                # This case should ideally be caught by static type checkers
+                # if call sites adhere to type hints.
+                raise TypeError(
+                    f"Invalid type for TargetCategories constructor: {type(item)}. "
+                    f"Expected TargetCategory, ComponentCategory, BatteryType, "
+                    f"InverterType, or EvChargerType."
+                )
+        # `super().__new__` for frozenset expects an iterable of elements for the set
+        return super().__new__(cls, processed_elements)
+
+    def __repr__(self) -> str:
+        """Return an ordered string representation."""
+        ordered = sorted(list(self), key=lambda cat: cat.target.value)
+        return str([cat.target.name for cat in ordered])
+
+
+TargetComponents: TypeAlias = TargetIds | TargetCategories
+"""Target components.
+
+Can be one of the following:
+
+- A set of target component IDs (TargetIds)
+- A set of target component categories with opt. types (TargetCategories)
+
+This is a frozen set, so it is immutable.
+The target components are used to specify the components that a dispatch
+should target.
 """
 
 
@@ -50,20 +226,49 @@ def _target_components_from_protobuf(
     """
     match pb_target.WhichOneof("components"):
         case "component_ids":
-            id_list: list[int] = list(pb_target.component_ids.ids)
-            return id_list
+            return TargetIds(*pb_target.component_ids.ids)
         case "component_categories":
-            category_list: list[ComponentCategory] = list(
-                map(
+            return TargetCategories(
+                *map(
                     ComponentCategory.from_proto,
                     pb_target.component_categories.categories,
                 )
             )
-            return category_list
+        case "component_categories_types":
+            return TargetCategories(
+                *map(
+                    lambda cat_and_type: _extract_category_type(cat_and_type)
+                    or ComponentCategory.from_proto(cat_and_type.category),
+                    pb_target.component_categories_types.categories,
+                )
+            )
         case _:
             raise ValueError("Invalid target components")
 
 
+def _extract_category_type(
+    cat_and_type: PBTargetComponents.CategoryAndType,
+) -> BatteryType | EvChargerType | InverterType | None:
+    """Extract the category type from a protobuf CategoryAndType.
+
+    Args:
+        cat_and_type: The protobuf CategoryAndType to extract from.
+
+    Returns:
+        The extracted category type.
+    """
+    match cat_and_type.WhichOneof("type"):
+        case "battery":
+            return BatteryType(cat_and_type.battery)
+        case "ev_charger":
+            return EvChargerType(cat_and_type.ev_charger)
+        case "inverter":
+            return InverterType(cat_and_type.inverter)
+        case _:
+            return None
+
+
+# Old, soon deprecated way to specify categories
 def _target_components_to_protobuf(
     target: TargetComponents,
 ) -> PBTargetComponents:
@@ -80,17 +285,54 @@ def _target_components_to_protobuf(
     """
     pb_target = PBTargetComponents()
     match target:
-        case list(component_ids) if all(isinstance(id, int) for id in component_ids):
-            pb_target.component_ids.ids.extend(cast(list[int], component_ids))
-        case list(categories) if all(
-            isinstance(cat, ComponentCategory) for cat in categories
-        ):
+        case TargetIds(component_ids):
+            pb_target.component_ids.ids.extend(component_ids)
+        case TargetCategories(categories):
+            # Old, soon deprecated way to specify categories
             pb_target.component_categories.categories.extend(
                 map(
-                    lambda cat: cat.to_proto(),
-                    cast(list[ComponentCategory], categories),
+                    lambda cat: cat.category.to_proto(),
+                    categories,
                 )
             )
+
+        case _:
+            raise ValueError(f"Invalid target components: {target}")
+    return pb_target
+
+
+# New, not yet supported way to specify categories and types
+def _target_components_to_protobuf_new(
+    target: TargetComponents,
+) -> PBTargetComponents:
+    """Convert target components to protobuf.
+
+    Args:
+        target: The target components to convert.
+
+    Raises:
+        ValueError: If the target components are invalid.
+
+    Returns:
+        The converted protobuf target components.
+    """
+    pb_target = PBTargetComponents()
+    match target:
+        case TargetIds(component_ids):
+            pb_target.component_ids.ids.extend(component_ids)
+        case TargetCategories(categories):
+            for category in categories:
+                pb_category = pb_target.component_categories_types.categories.add()
+                pb_category.category = category.category.to_proto()
+
+                match category.type:
+                    case BatteryType():
+                        pb_category.battery = category.type.value
+                    case EvChargerType():
+                        pb_category.ev_charger = category.type.value
+                    case InverterType():
+                        pb_category.inverter = category.type.value
+
         case _:
             raise ValueError(f"Invalid target components: {target}")
     return pb_target
@@ -295,7 +537,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             id=pb_object.metadata.dispatch_id,
             type=pb_object.data.type,
             create_time=to_datetime(pb_object.metadata.create_time),
-            update_time=to_datetime(pb_object.metadata.modification_time),
+            update_time=to_datetime(pb_object.metadata.update_time),
             end_time=(
                 to_datetime(pb_object.metadata.end_time)
                 if pb_object.metadata.HasField("end_time")
@@ -327,7 +569,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             metadata=DispatchMetadata(
                 dispatch_id=self.id,
                 create_time=to_timestamp(self.create_time),
-                modification_time=to_timestamp(self.update_time),
+                update_time=to_timestamp(self.update_time),
                 end_time=(
                     to_timestamp(self.end_time) if self.end_time is not None else None
                 ),
@@ -349,7 +591,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
         )
 
 
-class Event(IntEnum):
+class Event(Enum):
     """Enum representing the type of event that occurred during a dispatch operation."""
 
     UNSPECIFIED = StreamMicrogridDispatchesResponse.Event.EVENT_UNSPECIFIED
