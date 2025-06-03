@@ -15,10 +15,6 @@
 
 ## New Features
 
-* `dispatch-cli` supports now the parameter `--type` and `--running` to filter the list of running services by type and status, respectively.
-* Every call now has a default timeout of 60 seconds, streams terminate after five minutes. This can be influenced by the two new parameters for`DispatchApiClient.__init__()`:
-    * `default_timeout: timedelta` (default: 60 seconds)
-    * `stream_timeout: timedelta` (default: 5 minutes)
 * With the new `TargetCategory` class (providing `.category` and `.type`) we can now specify subtypes of the categories:
  * `ComponentCategory.BATTERY` uses `BatteryType` with possible values: `LI_ION`, `NA_ION`
  * `ComponentCategory.INVERTER` uses `InverterType` with possible values: `BATTERY`, `SOLAR`, `HYBRID`
