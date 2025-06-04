@@ -2,7 +2,7 @@
 
 ## Summary
 
-<!-- Here goes a general summary of what this release is about -->
+While the new TargetCategory class supports subtypes, only reading them is currently available; setting subtypes will be introduced in a future release.
 
 ## Upgrading
 
@@ -11,7 +11,7 @@
   * `TargetIds(1, 2, 3)` or
   * `TargetIds(ComponentIds(1), ComponentIds(2), ComponentIds(3))`
  * `TargetCategories` can be used to specify one or more target categories:
-  * `TargetCategories(ComponentCategory.BATTERY, ComponentCategory.SOLAR)`
+  * `TargetCategories(ComponentCategory.BATTERY, ComponentCategory.INVERTER)`
 
 ## New Features
 
