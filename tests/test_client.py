@@ -310,7 +310,7 @@ async def test_dispatch_stream(client: FakeClient, sample: Dispatch) -> None:
     stream = client.stream(microgrid_id)
 
     async def expect(dispatch: Dispatch, event: Event) -> None:
-        message = await stream.receive()
+        message = await stream.new_receiver().receive()
         assert message.dispatch == dispatch
         assert message.event == event
 

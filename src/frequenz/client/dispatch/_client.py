@@ -29,7 +29,6 @@ from frequenz.api.dispatch.v1.dispatch_pb2 import (
     UpdateMicrogridDispatchResponse,
 )
 
-from frequenz import channels
 from frequenz.client.base.channel import ChannelOptions, SslOptions
 from frequenz.client.base.client import BaseApiClient
 from frequenz.client.base.conversion import to_timestamp
@@ -211,21 +210,25 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             else:
                 break
 
-    def stream(self, microgrid_id: int) -> channels.Receiver[DispatchEvent]:
+    def stream(
+        self, microgrid_id: int
+    ) -> GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]:
         """Receive a stream of dispatch events.
 
-        This function returns a receiver channel that can be used to receive
-        dispatch events.
+        This function returns a streamer that can be used to receive dispatch
+        events.
         An event is one of [CREATE, UPDATE, DELETE].
 
         Example usage:
 
-        ```
+        ```python
         client = DispatchApiClient(
             key="key",
             server_url="grpc://dispatch.url.goes.here.example.com"
         )
-        async for message in client.stream(microgrid_id=1):
+        receiver = client.stream(microgrid_id=1).new_receiver()
+
+        async for message in receiver:
             print(message.event, message.dispatch)
         ```
 
@@ -233,18 +236,12 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             microgrid_id: The microgrid_id to receive dispatches for.
 
         Returns:
-            A receiver channel to receive the stream of dispatch events.
+            A broadcaster that can be used to receive dispatch events.
+            The broadcaster will automatically reconnect if the connection is lost.
+            It will also handle backoff and retry logic.
         """
-        return self._get_stream(microgrid_id).new_receiver()
-
-    def _get_stream(
-        self, microgrid_id: int
-    ) -> GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]:
-        """Get an instance to the streaming helper."""
         broadcaster = self._streams.get(microgrid_id)
-        # pylint: disable=protected-access
-        if broadcaster is not None and broadcaster._channel.is_closed:
-            # pylint: enable=protected-access
+        if broadcaster is not None and not broadcaster.is_running:
             del self._streams[microgrid_id]
             broadcaster = None
         if broadcaster is None:
