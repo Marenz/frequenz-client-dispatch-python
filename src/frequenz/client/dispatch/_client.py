@@ -242,9 +242,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
     ) -> GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]:
         """Get an instance to the streaming helper."""
         broadcaster = self._streams.get(microgrid_id)
-        # pylint: disable=protected-access
-        if broadcaster is not None and broadcaster._channel.is_closed:
-            # pylint: enable=protected-access
+        if broadcaster is not None and not broadcaster.is_running:
             del self._streams[microgrid_id]
             broadcaster = None
         if broadcaster is None:

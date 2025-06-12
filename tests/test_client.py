@@ -10,6 +10,7 @@ from datetime import timedelta
 from functools import partial
 
 import grpc
+import pytest
 from pytest import raises
 
 from frequenz.client.dispatch.test.client import FakeClient, to_create_params
@@ -302,12 +303,19 @@ async def test_delete_dispatch_fail(client: FakeClient) -> None:
         await client.delete(microgrid_id=1, dispatch_id=1)
 
 
-async def test_dispatch_stream(client: FakeClient, sample: Dispatch) -> None:
+@pytest.mark.parametrize("call_twice", [True, False])
+async def test_dispatch_stream(
+    client: FakeClient, sample: Dispatch, call_twice: bool
+) -> None:
     """Test dispatching a stream of dispatches."""
     microgrid_id = random.randint(1, 100)
     dispatches = [sample, sample, sample]
 
     stream = client.stream(microgrid_id)
+
+    if call_twice:
+        # Call function again to test behavior if stream already exists
+        _ = client.stream(microgrid_id)
 
     async def expect(dispatch: Dispatch, event: Event) -> None:
         message = await stream.receive()
