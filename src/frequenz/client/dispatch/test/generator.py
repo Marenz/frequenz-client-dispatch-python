@@ -13,6 +13,7 @@ from ..recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
 from ..types import (
     BatteryType,
     Dispatch,
+    DispatchId,
     EvChargerType,
     InverterType,
     TargetCategories,
@@ -122,7 +123,7 @@ class DispatchGenerator:
         ]
 
         return Dispatch(
-            id=self._last_id,
+            id=DispatchId(self._last_id),
             create_time=create_time,
             update_time=create_time + timedelta(seconds=self._rng.randint(0, 1000000)),
             type=str(self._rng.randint(0, 100_000)),

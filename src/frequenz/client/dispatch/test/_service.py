@@ -35,9 +35,10 @@ from google.protobuf.empty_pb2 import Empty
 
 # pylint: enable=no-name-in-module
 from frequenz.client.base.conversion import to_datetime as _to_dt
+from frequenz.client.common.microgrid import MicrogridId
 
 from .._internal_types import DispatchCreateRequest
-from ..types import Dispatch, DispatchEvent, Event
+from ..types import Dispatch, DispatchEvent, DispatchId, Event
 
 ALL_KEY = "all"
 """Key that has access to all resources in the FakeService."""
@@ -53,7 +54,7 @@ class FakeService:
     class StreamEvent:
         """Event for the stream."""
 
-        microgrid_id: int
+        microgrid_id: MicrogridId
         """The microgrid id."""
 
         event: DispatchEvent
@@ -66,10 +67,10 @@ class FakeService:
         )
         self._stream_sender = self._stream_channel.new_sender()
 
-        self.dispatches: dict[int, list[Dispatch]] = {}
+        self.dispatches: dict[MicrogridId, list[Dispatch]] = {}
         """List of dispatches per microgrid."""
 
-        self._last_id: int = 0
+        self._last_id: DispatchId = DispatchId(0)
         """Last used dispatch id."""
 
     def refresh_last_id_for(self, microgrid_id: MicrogridId) -> None:
@@ -138,7 +139,7 @@ class FakeService:
         """
         self._check_access(metadata)
 
-        grid_dispatches = self.dispatches.get(request.microgrid_id, [])
+        grid_dispatches = self.dispatches.get(MicrogridId(request.microgrid_id), [])
 
         return ListMicrogridDispatchesResponse(
             dispatches=map(
@@ -178,7 +179,7 @@ class FakeService:
 
         async for message in receiver:
             logging.debug("Received message: %s", message)
-            if message.microgrid_id == request.microgrid_id:
+            if message.microgrid_id == MicrogridId(request.microgrid_id):
                 response = StreamMicrogridDispatchesResponse(
                     event=message.event.event.value,
                     dispatch=message.event.dispatch.to_protobuf(),
@@ -233,7 +234,8 @@ class FakeService:
     ) -> CreateMicrogridDispatchResponse:
         """Create a new dispatch."""
         self._check_access(metadata)
-        self._last_id += 1
+        microgrid_id = MicrogridId(request.microgrid_id)
+        self._last_id = DispatchId(int(self._last_id) + 1)
 
         new_dispatch = _dispatch_from_request(
             DispatchCreateRequest.from_protobuf(request),
@@ -243,11 +245,11 @@ class FakeService:
         )
 
         # implicitly create the list if it doesn't exist
-        self.dispatches.setdefault(request.microgrid_id, []).append(new_dispatch)
+        self.dispatches.setdefault(microgrid_id, []).append(new_dispatch)
 
         await self._stream_sender.send(
             self.StreamEvent(
-                request.microgrid_id,
+                microgrid_id,
                 DispatchEvent(dispatch=new_dispatch, event=Event.CREATED),
             )
         )
@@ -262,9 +264,15 @@ class FakeService:
     ) -> UpdateMicrogridDispatchResponse:
         """Update a dispatch."""
         self._check_access(metadata)
-        grid_dispatches = self.dispatches[request.microgrid_id]
+
+        microgrid_id = MicrogridId(request.microgrid_id)
+        grid_dispatches = self.dispatches.get(microgrid_id, [])
         index = next(
-            (i for i, d in enumerate(grid_dispatches) if d.id == request.dispatch_id),
+            (
+                i
+                for i, d in enumerate(grid_dispatches)
+                if d.id == DispatchId(request.dispatch_id)
+            ),
             None,
         )
 
@@ -335,7 +343,7 @@ class FakeService:
 
         await self._stream_sender.send(
             self.StreamEvent(
-                request.microgrid_id,
+                microgrid_id,
                 DispatchEvent(dispatch=dispatch, event=Event.UPDATED),
             )
         )
@@ -350,9 +358,11 @@ class FakeService:
     ) -> GetMicrogridDispatchResponse:
         """Get a single dispatch."""
         self._check_access(metadata)
-        grid_dispatches = self.dispatches.get(request.microgrid_id, [])
+        microgrid_id = MicrogridId(request.microgrid_id)
+        grid_dispatches = self.dispatches.get(microgrid_id, [])
         dispatch = next(
-            (d for d in grid_dispatches if d.id == request.dispatch_id), None
+            (d for d in grid_dispatches if d.id == DispatchId(request.dispatch_id)),
+            None,
         )
 
         if dispatch is None:
@@ -373,10 +383,12 @@ class FakeService:
     ) -> Empty:
         """Delete a given dispatch."""
         self._check_access(metadata)
-        grid_dispatches = self.dispatches.get(request.microgrid_id, [])
+        microgrid_id = MicrogridId(request.microgrid_id)
+        grid_dispatches = self.dispatches.get(microgrid_id, [])
 
         dispatch_to_delete = next(
-            (d for d in grid_dispatches if d.id == request.dispatch_id), None
+            (d for d in grid_dispatches if d.id == DispatchId(request.dispatch_id)),
+            None,
         )
 
         if dispatch_to_delete is None:
@@ -391,7 +403,7 @@ class FakeService:
 
         await self._stream_sender.send(
             self.StreamEvent(
-                request.microgrid_id,
+                microgrid_id,
                 DispatchEvent(
                     dispatch=dispatch_to_delete,
                     event=Event.DELETED,
@@ -406,7 +418,7 @@ class FakeService:
 
 def _dispatch_from_request(
     _request: DispatchCreateRequest,
-    _id: int,
+    _id: DispatchId,
     create_time: datetime,
     update_time: datetime,
 ) -> Dispatch:

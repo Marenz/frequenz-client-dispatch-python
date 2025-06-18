@@ -11,7 +11,12 @@ import time_machine
 
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch.recurrence import Frequency, RecurrenceRule, Weekday
-from frequenz.client.dispatch.types import Dispatch, TargetCategories, TargetIds
+from frequenz.client.dispatch.types import (
+    Dispatch,
+    DispatchId,
+    TargetCategories,
+    TargetIds,
+)
 
 # Define a fixed current time for testing to avoid issues with datetime.now()
 CURRENT_TIME = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
@@ -21,7 +26,7 @@ CURRENT_TIME = datetime(2023, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 def dispatch_base() -> Dispatch:
     """Fixture to create a base Dispatch instance."""
     return Dispatch(
-        id=1,
+        id=DispatchId(1),
         type="TypeA",
         start_time=CURRENT_TIME,
         duration=timedelta(minutes=20),

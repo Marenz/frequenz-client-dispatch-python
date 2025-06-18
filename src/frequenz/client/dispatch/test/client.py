@@ -5,6 +5,8 @@
 
 from typing import Any
 
+from frequenz.client.common.microgrid import MicrogridId
+
 from .. import DispatchApiClient
 from ..types import Dispatch
 from ._service import ALL_KEY, NONE_KEY, FakeService
@@ -34,7 +36,7 @@ class FakeClient(DispatchApiClient):
         """
         return self._stuba
 
-    def dispatches(self, microgrid_id: int) -> list[Dispatch]:
+    def dispatches(self, microgrid_id: MicrogridId) -> list[Dispatch]:
         """List of dispatches.
 
         Args:
@@ -45,7 +47,7 @@ class FakeClient(DispatchApiClient):
         """
         return self._service.dispatches.get(microgrid_id, [])
 
-    def set_dispatches(self, microgrid_id: int, value: list[Dispatch]) -> None:
+    def set_dispatches(self, microgrid_id: MicrogridId, value: list[Dispatch]) -> None:
         """Set the list of dispatches.
 
         Args:
@@ -65,7 +67,7 @@ class FakeClient(DispatchApiClient):
         return self._stuba
 
 
-def to_create_params(microgrid_id: int, dispatch: Dispatch) -> dict[str, Any]:
+def to_create_params(microgrid_id: MicrogridId, dispatch: Dispatch) -> dict[str, Any]:
     """Convert a dispatch to client.create parameters.
 
     Args:

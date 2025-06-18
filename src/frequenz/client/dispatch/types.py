@@ -7,7 +7,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Self, SupportsInt, TypeAlias, cast
+from typing import Any, Self, SupportsInt, TypeAlias, cast, final
 
 # pylint: enable=no-name-in-module
 from frequenz.api.common.v1.microgrid.components.battery_pb2 import (
@@ -28,6 +28,7 @@ from frequenz.api.dispatch.v1.dispatch_pb2 import (
     StreamMicrogridDispatchesResponse,
 )
 from frequenz.api.dispatch.v1.dispatch_pb2 import TargetComponents as PBTargetComponents
+from frequenz.core.id import BaseId
 from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 
@@ -35,6 +36,11 @@ from frequenz.client.base.conversion import to_datetime, to_timestamp
 from frequenz.client.common.microgrid.components import ComponentCategory
 
 from .recurrence import Frequency, RecurrenceRule, Weekday
+
+
+@final
+class DispatchId(BaseId, str_prefix="DID"):
+    """A unique identifier for a dispatch."""
 
 
 class EvChargerType(Enum):
@@ -359,7 +365,7 @@ class TimeIntervalFilter:
 class Dispatch:  # pylint: disable=too-many-instance-attributes
     """Represents a dispatch operation within a microgrid system."""
 
-    id: int
+    id: DispatchId
     """The unique identifier for the dispatch."""
 
     type: str
@@ -534,7 +540,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             The converted dispatch.
         """
         return Dispatch(
-            id=pb_object.metadata.dispatch_id,
+            id=DispatchId(pb_object.metadata.dispatch_id),
             type=pb_object.data.type,
             create_time=to_datetime(pb_object.metadata.create_time),
             update_time=to_datetime(pb_object.metadata.update_time),
@@ -567,7 +573,7 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
 
         return PBDispatch(
             metadata=DispatchMetadata(
-                dispatch_id=self.id,
+                dispatch_id=int(self.id),
                 create_time=to_timestamp(self.create_time),
                 update_time=to_timestamp(self.update_time),
                 end_time=(

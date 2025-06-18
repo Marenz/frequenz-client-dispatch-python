@@ -18,6 +18,8 @@ from prompt_toolkit.history import FileHistory
 from prompt_toolkit.patch_stdout import patch_stdout
 from prompt_toolkit.shortcuts import CompleteStyle
 
+from frequenz.client.common.microgrid import MicrogridId
+
 from ._cli_types import (
     FuzzyDateTime,
     FuzzyIntRange,
@@ -27,7 +29,7 @@ from ._cli_types import (
 )
 from ._client import DispatchApiClient
 from .recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
-from .types import Dispatch, DispatchEvent
+from .types import Dispatch, DispatchEvent, DispatchId
 
 
 def format_datetime(dt: datetime | None) -> str:
@@ -260,7 +262,7 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
 @cli.command("stream")
 @click.pass_context
 @click.argument("microgrid-id", required=True, type=int)
-async def stream(ctx: click.Context, microgrid_id: int) -> None:
+async def stream(ctx: click.Context, microgrid_id: MicrogridId) -> None:
     """Stream dispatches."""
     event_stream: Receiver[DispatchEvent] = ctx.obj["client"].stream(
         microgrid_id=microgrid_id
@@ -452,8 +454,8 @@ async def create(
 async def update(
     ctx: click.Context,
     /,
-    microgrid_id: int,
-    dispatch_id: int,
+    microgrid_id: MicrogridId,
+    dispatch_id: DispatchId,
     **new_fields: dict[str, Any],
 ) -> None:
     """Update a dispatch."""
@@ -499,14 +501,17 @@ async def update(
 @click.argument("microgrid-id", required=True, type=int)
 @click.argument("dispatch_ids", type=int, nargs=-1)  # Allow multiple IDs
 @click.pass_context
-async def get(ctx: click.Context, microgrid_id: int, dispatch_ids: List[int]) -> None:
+async def get(
+    ctx: click.Context, microgrid_id: MicrogridId, dispatch_ids: List[int]
+) -> None:
     """Get one or multiple dispatches."""
     num_failed = 0
 
     for dispatch_id in dispatch_ids:
         try:
             dispatch = await ctx.obj["client"].get(
-                microgrid_id=microgrid_id, dispatch_id=dispatch_id
+                microgrid_id=microgrid_id,
+                dispatch_id=DispatchId(dispatch_id),
             )
             if ctx.obj["raw"]:
                 click.echo(pformat(dispatch, compact=True))
@@ -537,7 +542,7 @@ async def repl(
 @click.argument("dispatch_ids", type=FuzzyIntRange(), nargs=-1)  # Allow multiple IDs
 @click.pass_context
 async def delete(
-    ctx: click.Context, microgrid_id: int, dispatch_ids: list[list[int]]
+    ctx: click.Context, microgrid_id: MicrogridId, dispatch_ids: list[list[int]]
 ) -> None:
     """Delete multiple dispatches.
 

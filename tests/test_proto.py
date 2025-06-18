@@ -5,6 +5,7 @@
 
 from datetime import datetime, timedelta, timezone
 
+from frequenz.client.common.microgrid import MicrogridId
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch._internal_types import DispatchCreateRequest
 from frequenz.client.dispatch.recurrence import (
@@ -16,6 +17,7 @@ from frequenz.client.dispatch.recurrence import (
 from frequenz.client.dispatch.types import (
     BatteryType,
     Dispatch,
+    DispatchId,
     EvChargerType,
     InverterType,
     TargetCategories,
@@ -108,7 +110,7 @@ def test_dispatch() -> None:
     """Test the dispatch."""
     for dispatch in (
         Dispatch(
-            id=123,
+            id=DispatchId(123),
             type="test",
             create_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
             update_time=datetime(2023, 1, 1, tzinfo=timezone.utc),
@@ -129,7 +131,7 @@ def test_dispatch() -> None:
             ),
         ),
         Dispatch(
-            id=124,
+            id=DispatchId(124),
             type="test-2",
             create_time=datetime(2024, 3, 10, tzinfo=timezone.utc),
             update_time=datetime(2024, 3, 11, tzinfo=timezone.utc),
@@ -149,7 +151,7 @@ def test_dispatch() -> None:
             ),
         ),
         Dispatch(
-            id=125,
+            id=DispatchId(125),
             type="test-3",
             create_time=datetime(2024, 3, 10, tzinfo=timezone.utc),
             update_time=datetime(2024, 3, 11, tzinfo=timezone.utc),
@@ -175,7 +177,7 @@ def test_dispatch() -> None:
 def test_dispatch_create_request_with_no_recurrence() -> None:
     """Test the dispatch create request with no recurrence."""
     request = DispatchCreateRequest(
-        microgrid_id=123,
+        microgrid_id=MicrogridId(123),
         type="test",
         start_time=datetime(2024, 10, 10, tzinfo=timezone.utc),
         duration=timedelta(days=10),
@@ -192,7 +194,7 @@ def test_dispatch_create_request_with_no_recurrence() -> None:
 def test_dispatch_create_start_immediately() -> None:
     """Test the dispatch create request with no start time."""
     request = DispatchCreateRequest(
-        microgrid_id=123,
+        microgrid_id=MicrogridId(123),
         type="test",
         start_time="NOW",
         duration=timedelta(days=10),
