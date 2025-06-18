@@ -53,16 +53,7 @@ class FakeClient(DispatchApiClient):
             value: The list of dispatches to set.
         """
         self._service.dispatches[microgrid_id] = value
-
-        if len(value) == 0:
-            return
-
-        # Max between last id and the max id in the list
-        # pylint: disable=protected-access
-        self._service._last_id = max(
-            self._service._last_id, max(dispatch.id for dispatch in value)
-        )
-        # pylint: enable=protected-access
+        self._service.refresh_last_id_for(microgrid_id)
 
     @property
     def _service(self) -> FakeService:

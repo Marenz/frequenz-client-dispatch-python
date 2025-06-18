@@ -72,6 +72,15 @@ class FakeService:
         self._last_id: int = 0
         """Last used dispatch id."""
 
+    def refresh_last_id_for(self, microgrid_id: MicrogridId) -> None:
+        """Update last id to be the next highest number."""
+        dispatches = self.dispatches.get(microgrid_id, [])
+
+        if len(dispatches) == 0:
+            return
+
+        self._last_id = max(self._last_id, max(dispatch.id for dispatch in dispatches))
+
     def _check_access(self, metadata: grpc.aio.Metadata) -> None:
         """Check if the access key is valid.
 
