@@ -36,12 +36,14 @@ from frequenz.client.base.conversion import to_timestamp
 from frequenz.client.base.exception import ClientNotConnected
 from frequenz.client.base.retry import LinearBackoff
 from frequenz.client.base.streaming import GrpcStreamBroadcaster
+from frequenz.client.common.microgrid import MicrogridId
 
 from ._internal_types import DispatchCreateRequest
 from .recurrence import RecurrenceRule
 from .types import (
     Dispatch,
     DispatchEvent,
+    DispatchId,
     TargetComponents,
     _target_components_to_protobuf,
 )
@@ -83,7 +85,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         )
         self._metadata = (("key", key),)
         self._streams: dict[
-            int, GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]
+            MicrogridId,
+            GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent],
         ] = {}
         """A dictionary of streamers, keyed by microgrid_id."""
 
@@ -114,7 +117,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
     # pylint: disable=too-many-arguments, too-many-locals
     async def list(
         self,
-        microgrid_id: int,
+        microgrid_id: MicrogridId,
         *,
         target_components: Iterator[TargetComponents] = iter(()),
         start_from: datetime | None = None,
@@ -138,7 +141,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             key="key",
             server_url="grpc://dispatch.url.goes.here.example.com"
         )
-        async for page in client.list(microgrid_id=1):
+        async for page in client.list(microgrid_id=MicrogridId(1)):
             for dispatch in page:
                 print(dispatch)
         ```
@@ -185,7 +188,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         )
 
         request = ListMicrogridDispatchesRequest(
-            microgrid_id=microgrid_id,
+            microgrid_id=int(microgrid_id),
             filter=filters,
             pagination_params=(
                 PaginationParams(page_size=page_size) if page_size else None
@@ -211,7 +214,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             else:
                 break
 
-    def stream(self, microgrid_id: int) -> channels.Receiver[DispatchEvent]:
+    def stream(self, microgrid_id: MicrogridId) -> channels.Receiver[DispatchEvent]:
         """Receive a stream of dispatch events.
 
         This function returns a receiver channel that can be used to receive
@@ -238,7 +241,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         return self._get_stream(microgrid_id).new_receiver()
 
     def _get_stream(
-        self, microgrid_id: int
+        self, microgrid_id: MicrogridId
     ) -> GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent]:
         """Get an instance to the streaming helper."""
         broadcaster = self._streams.get(microgrid_id)
@@ -246,7 +249,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             del self._streams[microgrid_id]
             broadcaster = None
         if broadcaster is None:
-            request = StreamMicrogridDispatchesRequest(microgrid_id=microgrid_id)
+            request = StreamMicrogridDispatchesRequest(microgrid_id=int(microgrid_id))
             broadcaster = GrpcStreamBroadcaster(
                 stream_name="StreamMicrogridDispatches",
                 stream_method=lambda: cast(
@@ -266,7 +269,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
     async def create(  # pylint: disable=too-many-positional-arguments
         self,
-        microgrid_id: int,
+        microgrid_id: MicrogridId,
         type: str,  # pylint: disable=redefined-builtin
         start_time: datetime | Literal["NOW"],
         duration: timedelta | None,
@@ -334,8 +337,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
     async def update(
         self,
         *,
-        microgrid_id: int,
-        dispatch_id: int,
+        microgrid_id: MicrogridId,
+        dispatch_id: DispatchId,
         new_fields: dict[str, Any],
     ) -> Dispatch:
         """Update a dispatch.
@@ -359,7 +362,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             ValueError: If updating `type` or `dry_run`.
         """
         msg = UpdateMicrogridDispatchRequest(
-            dispatch_id=dispatch_id, microgrid_id=microgrid_id
+            dispatch_id=int(dispatch_id), microgrid_id=int(microgrid_id)
         )
 
         for key, val in new_fields.items():
@@ -423,7 +426,9 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
         return Dispatch.from_protobuf(response.dispatch)
 
-    async def get(self, *, microgrid_id: int, dispatch_id: int) -> Dispatch:
+    async def get(
+        self, *, microgrid_id: MicrogridId, dispatch_id: DispatchId
+    ) -> Dispatch:
         """Get a dispatch.
 
         Args:
@@ -434,7 +439,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             Dispatch: The dispatch.
         """
         request = GetMicrogridDispatchRequest(
-            dispatch_id=dispatch_id, microgrid_id=microgrid_id
+            dispatch_id=int(dispatch_id), microgrid_id=int(microgrid_id)
         )
         response = await cast(
             Awaitable[GetMicrogridDispatchResponse],
@@ -444,7 +449,9 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         )
         return Dispatch.from_protobuf(response.dispatch)
 
-    async def delete(self, *, microgrid_id: int, dispatch_id: int) -> None:
+    async def delete(
+        self, *, microgrid_id: MicrogridId, dispatch_id: DispatchId
+    ) -> None:
         """Delete a dispatch.
 
         Args:
@@ -452,7 +459,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             dispatch_id: The dispatch_id to delete.
         """
         request = DeleteMicrogridDispatchRequest(
-            dispatch_id=dispatch_id, microgrid_id=microgrid_id
+            dispatch_id=int(dispatch_id), microgrid_id=int(microgrid_id)
         )
         await cast(
             Awaitable[None],

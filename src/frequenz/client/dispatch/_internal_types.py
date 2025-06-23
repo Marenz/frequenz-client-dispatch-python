@@ -20,6 +20,7 @@ from google.protobuf.struct_pb2 import Struct
 from google.protobuf.timestamp_pb2 import Timestamp
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
+from frequenz.client.common.microgrid import MicrogridId
 
 from .recurrence import RecurrenceRule
 from .types import (
@@ -36,7 +37,7 @@ from .types import (
 class DispatchCreateRequest:
     """Request to create a new dispatch."""
 
-    microgrid_id: int
+    microgrid_id: MicrogridId
     """The identifier of the microgrid to which this dispatch belongs."""
 
     type: str
@@ -93,7 +94,7 @@ class DispatchCreateRequest:
         )
 
         return DispatchCreateRequest(
-            microgrid_id=pb_object.microgrid_id,
+            microgrid_id=MicrogridId(pb_object.microgrid_id),
             type=pb_object.dispatch_data.type,
             start_time=(
                 "NOW"
@@ -118,7 +119,7 @@ class DispatchCreateRequest:
         payload.update(self.payload)
 
         return PBDispatchCreateRequest(
-            microgrid_id=self.microgrid_id,
+            microgrid_id=int(self.microgrid_id),
             dispatch_data=DispatchData(
                 type=self.type,
                 start_time=(

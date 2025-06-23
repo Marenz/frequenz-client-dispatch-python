@@ -12,6 +12,7 @@ While the new TargetCategory class supports subtypes, only reading them is curre
   * `TargetIds(ComponentIds(1), ComponentIds(2), ComponentIds(3))`
  * `TargetCategories` can be used to specify one or more target categories:
   * `TargetCategories(ComponentCategory.BATTERY, ComponentCategory.INVERTER)`
+* Dispatch ids and microgrid ids are no longer simple `int` types but are now wrapped in `DispatchId` and `MicrogridId` classes, respectively. This allows for better type safety and clarity in the codebase.
 
 ## New Features
 

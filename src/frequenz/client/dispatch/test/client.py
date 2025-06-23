@@ -5,6 +5,8 @@
 
 from typing import Any
 
+from frequenz.client.common.microgrid import MicrogridId
+
 from .. import DispatchApiClient
 from ..types import Dispatch
 from ._service import ALL_KEY, NONE_KEY, FakeService
@@ -34,7 +36,7 @@ class FakeClient(DispatchApiClient):
         """
         return self._stuba
 
-    def dispatches(self, microgrid_id: int) -> list[Dispatch]:
+    def dispatches(self, microgrid_id: MicrogridId) -> list[Dispatch]:
         """List of dispatches.
 
         Args:
@@ -45,7 +47,7 @@ class FakeClient(DispatchApiClient):
         """
         return self._service.dispatches.get(microgrid_id, [])
 
-    def set_dispatches(self, microgrid_id: int, value: list[Dispatch]) -> None:
+    def set_dispatches(self, microgrid_id: MicrogridId, value: list[Dispatch]) -> None:
         """Set the list of dispatches.
 
         Args:
@@ -53,16 +55,7 @@ class FakeClient(DispatchApiClient):
             value: The list of dispatches to set.
         """
         self._service.dispatches[microgrid_id] = value
-
-        if len(value) == 0:
-            return
-
-        # Max between last id and the max id in the list
-        # pylint: disable=protected-access
-        self._service._last_id = max(
-            self._service._last_id, max(dispatch.id for dispatch in value)
-        )
-        # pylint: enable=protected-access
+        self._service.refresh_last_id_for(microgrid_id)
 
     @property
     def _service(self) -> FakeService:
@@ -74,7 +67,7 @@ class FakeClient(DispatchApiClient):
         return self._stuba
 
 
-def to_create_params(microgrid_id: int, dispatch: Dispatch) -> dict[str, Any]:
+def to_create_params(microgrid_id: MicrogridId, dispatch: Dispatch) -> dict[str, Any]:
     """Convert a dispatch to client.create parameters.
 
     Args:

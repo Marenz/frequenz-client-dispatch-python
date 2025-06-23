@@ -13,10 +13,11 @@ import grpc
 import pytest
 from pytest import raises
 
+from frequenz.client.common.microgrid import MicrogridId
 from frequenz.client.dispatch.test.client import FakeClient, to_create_params
 from frequenz.client.dispatch.test.fixtures import client, generator, sample
 from frequenz.client.dispatch.test.generator import DispatchGenerator
-from frequenz.client.dispatch.types import Dispatch, Event
+from frequenz.client.dispatch.types import Dispatch, DispatchId, Event
 
 # Ignore flake8 error in the rest of the file to use the same fixture names
 # flake8: noqa[811]
@@ -46,7 +47,7 @@ def _update_metadata(dispatch: Dispatch, created: Dispatch) -> Dispatch:
 
 async def test_create_dispatch(client: FakeClient, sample: Dispatch) -> None:
     """Test creating a dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
     sample = _update_metadata(sample, dispatch)
@@ -57,7 +58,7 @@ async def test_create_return_dispatch(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:
     """Test creating a dispatch and returning the created dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     for _ in range(100):
         sample = generator.generate_dispatch()
 
@@ -70,7 +71,7 @@ async def test_create_return_dispatch(
 
 async def test_create_duration_none(client: FakeClient, sample: Dispatch) -> None:
     """Test creating a dispatch with a None duration."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     sample = replace(sample, duration=None)
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
     sample = _update_metadata(sample, dispatch)
@@ -79,7 +80,7 @@ async def test_create_duration_none(client: FakeClient, sample: Dispatch) -> Non
 
 async def test_create_duration_0(client: FakeClient, sample: Dispatch) -> None:
     """Test creating a dispatch with a 0 duration."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     sample = replace(sample, duration=timedelta(minutes=0))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
     sample = _update_metadata(sample, dispatch)
@@ -90,21 +91,21 @@ async def test_list_dispatches(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:
     """Test listing dispatches."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
 
     client.set_dispatches(
         microgrid_id=microgrid_id,
         value=[generator.generate_dispatch() for _ in range(100)],
     )
 
-    dispatches = client.list(microgrid_id=1)
+    dispatches = client.list(microgrid_id=MicrogridId(1))
     async for page in dispatches:
         for dispatch in page:
             # First find matching id in client.dispatches, then compare
             service_side_dispatch = next(
                 filter(
                     partial(lambda d, md: d.id == md.id, md=dispatch),
-                    client.dispatches(microgrid_id=1),
+                    client.dispatches(microgrid_id=MicrogridId(1)),
                 ),
                 None,
             )
@@ -116,7 +117,7 @@ async def test_list_dispatches_no_duration(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:
     """Test listing dispatches with a None duration."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
 
     client.set_dispatches(
         microgrid_id=microgrid_id,
@@ -125,17 +126,17 @@ async def test_list_dispatches_no_duration(
         ],
     )
 
-    dispatches = client.list(microgrid_id=1)
+    dispatches = client.list(microgrid_id=MicrogridId(1))
     async for page in dispatches:
         for dispatch in page:
-            assert dispatch in client.dispatches(microgrid_id=1)
+            assert dispatch in client.dispatches(microgrid_id=MicrogridId(1))
 
 
 async def test_list_create_dispatches(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:
     """Test listing dispatches."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
 
     # Test with empty list
     page = await anext(client.list(microgrid_id=microgrid_id))
@@ -161,7 +162,7 @@ async def test_list_create_dispatches(
 
 async def test_update_dispatch(client: FakeClient, sample: Dispatch) -> None:
     """Test updating a dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
     sample = _update_metadata(sample, dispatch)
@@ -179,7 +180,7 @@ async def test_update_dispatch_to_no_duration(
     client: FakeClient, sample: Dispatch
 ) -> None:
     """Test updating the duration field of a dispatch to None."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     client.set_dispatches(
         microgrid_id=microgrid_id,
         value=[replace(sample, duration=timedelta(minutes=10))],
@@ -197,7 +198,7 @@ async def test_update_dispatch_to_0_duration(
     client: FakeClient, sample: Dispatch
 ) -> None:
     """Test updating the duration field of a dispatch to 0."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     client.set_dispatches(
         microgrid_id=microgrid_id,
         value=[replace(sample, duration=timedelta(minutes=10))],
@@ -215,7 +216,7 @@ async def test_update_dispatch_from_no_duration(
     client: FakeClient, sample: Dispatch
 ) -> None:
     """Test updating the duration field of a dispatch from None."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     client.set_dispatches(
         microgrid_id=microgrid_id, value=[replace(sample, duration=None)]
     )
@@ -230,7 +231,7 @@ async def test_update_dispatch_from_no_duration(
 
 async def test_update_dispatch_fail(client: FakeClient, sample: Dispatch) -> None:
     """Test updating the type and dry_run fields of a dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
     assert dispatch is not None
@@ -253,7 +254,7 @@ async def test_update_dispatch_fail(client: FakeClient, sample: Dispatch) -> Non
 
 async def test_get_dispatch(client: FakeClient, sample: Dispatch) -> None:
     """Test getting a dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
     sample = _update_metadata(sample, dispatch)
@@ -266,7 +267,7 @@ async def test_get_dispatch(client: FakeClient, sample: Dispatch) -> None:
 
 async def test_get_dispatch_no_duration(client: FakeClient, sample: Dispatch) -> None:
     """Test getting a dispatch with a None duration."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     sample = replace(sample, duration=None)
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
@@ -281,12 +282,12 @@ async def test_get_dispatch_no_duration(client: FakeClient, sample: Dispatch) ->
 async def test_get_dispatch_fail(client: FakeClient) -> None:
     """Test getting a non-existent dispatch."""
     with raises(grpc.RpcError):
-        await client.get(microgrid_id=1, dispatch_id=1)
+        await client.get(microgrid_id=MicrogridId(1), dispatch_id=DispatchId(1))
 
 
 async def test_delete_dispatch(client: FakeClient, sample: Dispatch) -> None:
     """Test deleting a dispatch."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatch = await client.create(**to_create_params(microgrid_id, sample))
 
     sample = _update_metadata(sample, dispatch)
@@ -300,7 +301,7 @@ async def test_delete_dispatch(client: FakeClient, sample: Dispatch) -> None:
 async def test_delete_dispatch_fail(client: FakeClient) -> None:
     """Test deleting a non-existent dispatch."""
     with raises(grpc.RpcError):
-        await client.delete(microgrid_id=1, dispatch_id=1)
+        await client.delete(microgrid_id=MicrogridId(1), dispatch_id=DispatchId(1))
 
 
 @pytest.mark.parametrize("call_twice", [True, False])
@@ -308,7 +309,7 @@ async def test_dispatch_stream(
     client: FakeClient, sample: Dispatch, call_twice: bool
 ) -> None:
     """Test dispatching a stream of dispatches."""
-    microgrid_id = random.randint(1, 100)
+    microgrid_id = MicrogridId(random.randint(1, 100))
     dispatches = [sample, sample, sample]
 
     stream = client.stream(microgrid_id)

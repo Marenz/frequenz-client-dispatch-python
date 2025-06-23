@@ -12,6 +12,7 @@ import pytest
 from asyncclick.testing import CliRunner
 from tzlocal import get_localzone
 
+from frequenz.client.common.microgrid import MicrogridId
 from frequenz.client.common.microgrid.components import ComponentCategory
 from frequenz.client.dispatch.__main__ import cli
 from frequenz.client.dispatch.recurrence import (
@@ -23,6 +24,7 @@ from frequenz.client.dispatch.recurrence import (
 from frequenz.client.dispatch.test.client import ALL_KEY, FakeClient
 from frequenz.client.dispatch.types import (
     Dispatch,
+    DispatchId,
     TargetCategories,
     TargetComponents,
     TargetIds,
@@ -69,7 +71,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
             {
                 1: [
                     Dispatch(
-                        id=1,
+                        id=DispatchId(1),
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
@@ -83,7 +85,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                     )
                 ]
             },
-            1,
+            MicrogridId(1),
             "1 dispatches, 0 filtered out",
             0,
         ),
@@ -92,7 +94,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
             {
                 2: [
                     Dispatch(
-                        id=2,
+                        id=DispatchId(2),
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
@@ -106,7 +108,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                     )
                 ]
             },
-            1,
+            MicrogridId(1),
             "0 dispatches, 0 filtered out",
             0,
         ),
@@ -114,7 +116,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
             {
                 1: [
                     Dispatch(
-                        id=1,
+                        id=DispatchId(1),
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
@@ -129,7 +131,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                 ],
                 2: [
                     Dispatch(
-                        id=2,
+                        id=DispatchId(2),
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
@@ -143,7 +145,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                     ),
                 ],
             },
-            1,
+            MicrogridId(1),
             "1 dispatches, 0 filtered out",
             0,
         ),
@@ -157,7 +159,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
             {
                 1: [
                     Dispatch(
-                        id=1,
+                        id=DispatchId(1),
                         type="test",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=3600),
@@ -170,7 +172,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                         update_time=datetime(2023, 1, 1, 0, 0, 0),
                     ),
                     Dispatch(
-                        id=2,
+                        id=DispatchId(2),
                         type="filtered",
                         start_time=datetime(2023, 1, 1, 0, 0, 0),
                         duration=timedelta(seconds=1800),
@@ -184,7 +186,7 @@ def mock_client(fake_client: FakeClient) -> Generator[None, None, None]:
                     ),
                 ],
             },
-            1,
+            MicrogridId(1),
             "1 dispatches, 1 filtered out",
             0,
         ),
@@ -194,17 +196,21 @@ async def test_list_command(
     runner: CliRunner,
     fake_client: FakeClient,
     dispatches: dict[int, list[Dispatch]],
-    microgrid_id: int,
+    microgrid_id: MicrogridId,
     expected_output: str,
     expected_return_code: int,
 ) -> None:
     """Test the list command."""
     for microgrid_id_, dispatch_list in dispatches.items():
-        fake_client.set_dispatches(microgrid_id_, dispatch_list)
+        if isinstance(microgrid_id_, int):
+            fake_client.set_dispatches(MicrogridId(microgrid_id_), dispatch_list)
 
+    str_microgrid_id = str(
+        int(microgrid_id) if isinstance(microgrid_id, MicrogridId) else microgrid_id
+    )
     result = await runner.invoke(
         cli,
-        ["--raw", "list", str(microgrid_id), "--type", "test"],
+        ["--raw", "list", str_microgrid_id, "--type", "test"],
         env=ENVIRONMENT_VARIABLES,
     )
     assert expected_output in result.output
@@ -228,7 +234,7 @@ async def test_list_command(
                 "--active",
                 "False",
             ],
-            829,
+            MicrogridId(829),
             "test",
             timedelta(hours=1),
             timedelta(seconds=3600),
@@ -248,7 +254,7 @@ async def test_list_command(
                 "--dry-run",
                 "true",
             ],
-            1,
+            MicrogridId(1),
             "test",
             timedelta(hours=2),
             timedelta(seconds=3600),
@@ -259,7 +265,7 @@ async def test_list_command(
         ),
         (
             ["create", "x"],
-            0,
+            MicrogridId(0),
             "",
             timedelta(),
             timedelta(),
@@ -299,7 +305,7 @@ async def test_list_command(
                 "--by-monthday",
                 "17",
             ],
-            1,
+            MicrogridId(1),
             "test",
             timedelta(hours=1),
             timedelta(seconds=3600),
@@ -334,7 +340,7 @@ async def test_list_command(
                 "--by-minute",
                 "5",
             ],
-            50,
+            MicrogridId(50),
             "test50",
             timedelta(hours=5),
             timedelta(seconds=3600),
@@ -362,7 +368,7 @@ async def test_list_command(
                 "now",
                 "1h",
             ],
-            1,
+            MicrogridId(1),
             "test_start_immediately",
             "NOW",
             timedelta(seconds=3600),
@@ -377,7 +383,7 @@ async def test_create_command(
     runner: CliRunner,
     fake_client: FakeClient,
     args: list[str],
-    expected_microgrid_id: int,
+    expected_microgrid_id: MicrogridId,
     expected_type: str,
     expected_start_time_delta: timedelta | Literal["NOW"],
     expected_duration: timedelta,
@@ -447,7 +453,7 @@ async def test_create_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -471,7 +477,7 @@ async def test_create_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -497,7 +503,7 @@ async def test_create_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -529,7 +535,7 @@ async def test_create_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -615,16 +621,16 @@ async def test_update_command(
     expected_output: str,
 ) -> None:
     """Test the update command."""
-    fake_client.set_dispatches(1, dispatches)
+    fake_client.set_dispatches(MicrogridId(1), dispatches)
     result = await runner.invoke(
         cli, ["--raw", "update", "1", "1", *args], env=ENVIRONMENT_VARIABLES
     )
     assert expected_output in result.output
     assert result.exit_code == expected_return_code
     if dispatches:
-        assert len(fake_client.dispatches(1)) == 1
+        assert len(fake_client.dispatches(MicrogridId(1))) == 1
         for key, value in fields.items():
-            assert getattr(fake_client.dispatches(1)[0], key) == value
+            assert getattr(fake_client.dispatches(MicrogridId(1))[0], key) == value
 
 
 @pytest.mark.asyncio
@@ -634,7 +640,7 @@ async def test_update_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -648,7 +654,7 @@ async def test_update_command(
                 )
             ],
             1,
-            "Dispatch(id=1,",
+            "Dispatch(id=DispatchId(1),",
         ),
         ([], 999, "Error"),
         (
@@ -662,13 +668,16 @@ async def test_get_command(
     runner: CliRunner,
     fake_client: FakeClient,
     dispatches: list[Dispatch],
-    dispatch_id: int,
+    dispatch_id: DispatchId,
     expected_in_output: str,
 ) -> None:
     """Test the get command."""
-    fake_client.set_dispatches(1, dispatches)
+    fake_client.set_dispatches(MicrogridId(1), dispatches)
+    str_dispatch_id = str(
+        int(dispatch_id) if isinstance(dispatch_id, DispatchId) else dispatch_id
+    )
     result = await runner.invoke(
-        cli, ["--raw", "get", "1", str(dispatch_id)], env=ENVIRONMENT_VARIABLES
+        cli, ["--raw", "get", "1", str_dispatch_id], env=ENVIRONMENT_VARIABLES
     )
     assert result.exit_code == 0 if dispatches else 1
     assert expected_in_output in result.output
@@ -681,7 +690,7 @@ async def test_get_command(
         (
             [
                 Dispatch(
-                    id=1,
+                    id=DispatchId(1),
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
@@ -694,7 +703,7 @@ async def test_get_command(
                     update_time=datetime(2023, 1, 1, 0, 0, 0),
                 )
             ],
-            1,
+            DispatchId(1),
             "Dispatches deleted: [1]",
             0,
         ),
@@ -711,16 +720,19 @@ async def test_delete_command(
     runner: CliRunner,
     fake_client: FakeClient,
     dispatches: list[Dispatch],
-    dispatch_id: int,
+    dispatch_id: DispatchId,
     expected_output: str,
     expected_return_code: int,
 ) -> None:
     """Test the delete command."""
-    fake_client.set_dispatches(1, dispatches)
+    str_dispatch_id = str(
+        int(dispatch_id) if isinstance(dispatch_id, DispatchId) else dispatch_id
+    )
+    fake_client.set_dispatches(MicrogridId(1), dispatches)
     result = await runner.invoke(
-        cli, ["delete", "1", str(dispatch_id)], env=ENVIRONMENT_VARIABLES
+        cli, ["delete", "1", str_dispatch_id], env=ENVIRONMENT_VARIABLES
     )
     assert result.exit_code == expected_return_code
     assert expected_output in result.output
     if dispatches:
-        assert len(fake_client.dispatches(1)) == 0
+        assert len(fake_client.dispatches(MicrogridId(1))) == 0
