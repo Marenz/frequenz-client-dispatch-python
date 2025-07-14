@@ -10,7 +10,9 @@
 
 ## New Features
 
-* `Dispatch.started_at(now: datetime)` was added as alternative to the `started` property for when users want to use the same `now` for multiple calls, ensuring deterministic return values with respect to the same `now`.
+* Support secrets for signing and verifying messages.
+  * Use the new env variable `DISPATCH_API_SECRET` to set the secret key.
+  * Use the new `sign_secret` parameter in the `DispatchClient` constructor to set the secret key.
 
 ## Bug Fixes
 

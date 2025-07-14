@@ -24,7 +24,7 @@ class FakeClient(DispatchApiClient):
         self,
     ) -> None:
         """Initialize the mock client."""
-        super().__init__(server_url="mock", key=ALL_KEY, connect=False)
+        super().__init__(server_url="mock", auth_key=ALL_KEY, connect=False)
         self._stuba: FakeService = FakeService()
 
     @property
