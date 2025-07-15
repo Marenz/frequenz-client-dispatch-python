@@ -9,9 +9,9 @@ from frequenz.client.common.microgrid import MicrogridId
 
 from .. import DispatchApiClient
 from ..types import Dispatch
-from ._service import ALL_KEY, NONE_KEY, FakeService
+from ._service import FakeService
 
-__all__ = ["FakeClient", "to_create_params", "ALL_KEY", "NONE_KEY"]
+__all__ = ["FakeClient", "to_create_params"]
 
 
 class FakeClient(DispatchApiClient):
@@ -24,7 +24,7 @@ class FakeClient(DispatchApiClient):
         self,
     ) -> None:
         """Initialize the mock client."""
-        super().__init__(server_url="mock", auth_key=ALL_KEY, connect=False)
+        super().__init__(server_url="mock", auth_key="what", connect=False)
         self._stuba: FakeService = FakeService()
 
     @property
