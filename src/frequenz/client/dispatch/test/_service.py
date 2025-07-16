@@ -46,6 +46,8 @@ ALL_KEY = "all"
 NONE_KEY = "none"
 """Key that has no access to any resources in the FakeService."""
 
+_logger = logging.getLogger(__name__)
+
 
 class FakeService:
     """Dispatch mock service for testing."""
@@ -178,7 +180,7 @@ class FakeService:
         receiver = self._stream_channel.new_receiver()
 
         async for message in receiver:
-            logging.debug("Received message: %s", message)
+            _logger.debug("Received message: %s", message)
             if message.microgrid_id == MicrogridId(request.microgrid_id):
                 response = StreamMicrogridDispatchesResponse(
                     event=message.event.event.value,
