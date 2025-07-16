@@ -427,6 +427,26 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             return False
 
         now = datetime.now(tz=timezone.utc)
+        return self.started_at(now)
+
+    def started_at(self, now: datetime) -> bool:
+        """Check if the dispatch has started.
+
+        A dispatch is considered started if the current time is after the start
+        time but before the end time.
+
+        Recurring dispatches are considered started if the current time is after
+        the start time of the last occurrence but before the end time of the
+        last occurrence.
+
+        Args:
+            now: time to use as now
+
+        Returns:
+            True if the dispatch is started
+        """
+        if not self.active:
+            return False
 
         if now < self.start_time:
             return False
