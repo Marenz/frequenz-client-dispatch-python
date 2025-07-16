@@ -10,7 +10,7 @@
 
 ## New Features
 
-<!-- Here goes the main new features and examples or instructions on how to use them -->
+* `Dispatch.started_at(now: datetime)` was added as alternative to the `started` property for when users want to use the same `now` for multiple calls, ensuring deterministic return values with respect to the same `now`.
 
 ## Bug Fixes
 
