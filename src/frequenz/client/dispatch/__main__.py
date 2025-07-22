@@ -172,10 +172,17 @@ def print_dispatch(dispatch: Dispatch) -> None:
 )
 @click.option(
     "--api-key",
-    help="API key for authentication",
+    help="API key for authentication (deprecated, use --auth-key or DISPATCH_API_AUTH_KEY)",
     envvar="DISPATCH_API_KEY",
     show_envvar=True,
-    required=True,
+    required=False,
+)
+@click.option(
+    "--auth-key",
+    help="API auth key for authentication",
+    envvar="DISPATCH_API_AUTH_KEY",
+    show_envvar=True,
+    required=False,
 )
 @click.option(
     "--sign-secret",
@@ -193,15 +200,28 @@ def print_dispatch(dispatch: Dispatch) -> None:
     default=False,
 )
 @click.pass_context
-async def cli(
-    ctx: click.Context, url: str, api_key: str, sign_secret: str | None, raw: bool
+async def cli(  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    ctx: click.Context,
+    url: str,
+    api_key: str | None,
+    auth_key: str | None,
+    sign_secret: str | None,
+    raw: bool,
 ) -> None:
     """Dispatch Service CLI."""
     if ctx.obj is None:
         ctx.obj = {}
 
+    key = auth_key or api_key
+
+    if not key:
+        raise click.BadParameter(
+            "You must provide an API auth key using --auth-key or "
+            "the DISPATCH_API_AUTH_KEY environment variable."
+        )
+
     click.echo(f"Using API URL: {url}", err=True)
-    click.echo(f"Using API Auth Key: {api_key[:4]}{'*' * 8}", err=True)
+    click.echo(f"Using API Auth Key: {key[:4]}{'*' * 8}", err=True)
 
     if sign_secret:
         if len(sign_secret) > 8:
@@ -211,16 +231,28 @@ async def cli(
         else:
             click.echo("Using API Signing Secret (not shown).", err=True)
 
+    if api_key and auth_key is None:
+        click.echo(
+            click.style(
+                "Deprecation Notice: The --api-key option and the DISPATCH_API_KEY environment "
+                "variable are deprecated. "
+                "Please use --auth-key or set the DISPATCH_API_AUTH_KEY environment variable.",
+                fg="red",
+                bold=True,
+            ),
+            err=True,
+        )
+
     ctx.obj["client"] = DispatchApiClient(
         server_url=url,
-        auth_key=api_key,
+        auth_key=key,
         sign_secret=sign_secret,
         connect=True,
     )
 
     ctx.obj["params"] = {
         "url": url,
-        "api_key": api_key,
+        "auth_key": key,
         "sign_secret": sign_secret,
     }
 
@@ -228,7 +260,7 @@ async def cli(
 
     # Check if a subcommand was given
     if ctx.invoked_subcommand is None:
-        await interactive_mode(url, api_key, sign_secret)
+        await interactive_mode(url, key, sign_secret)
 
 
 @cli.command("list")
@@ -555,7 +587,7 @@ async def repl(
 ) -> None:
     """Start an interactive interface."""
     await interactive_mode(
-        obj["params"]["url"], obj["params"]["api_key"], obj["params"]["sign_secret"]
+        obj["params"]["url"], obj["params"]["auth_key"], obj["params"]["sign_secret"]
     )
 
 
@@ -596,7 +628,7 @@ async def delete(
         raise click.ClickException("Some deletions failed.")
 
 
-async def interactive_mode(url: str, api_key: str, sign_secret: str | None) -> None:
+async def interactive_mode(url: str, auth_key: str, sign_secret: str | None) -> None:
     """Interactive mode for the CLI."""
     hist_file = os.path.expanduser("~/.dispatch_cli_history.txt")
     session: PromptSession[str] = PromptSession(history=FileHistory(filename=hist_file))
@@ -637,7 +669,7 @@ async def interactive_mode(url: str, api_key: str, sign_secret: str | None) -> N
         else:
             # Split, but keep quoted strings together
             params = (
-                ["--url", url, "--api-key", api_key]
+                ["--url", url, "--auth-key", auth_key]
                 + (["--sign-secret", sign_secret] if sign_secret else [])
                 + click.parser.split_arg_string(user_input)
             )

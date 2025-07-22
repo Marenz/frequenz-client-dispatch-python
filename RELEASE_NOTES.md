@@ -11,8 +11,10 @@
 ## New Features
 
 * Support secrets for signing and verifying messages.
-  * Use the new env variable `DISPATCH_API_SECRET` to set the secret key.
+  * Use the new env variable `DISPATCH_API_SIGN_SECRET` to set the secret key.
   * Use the new `sign_secret` parameter in the `DispatchClient` constructor to set the secret key.
+* Added `auth_key` parameter to the `dispatch-cli` and thew env variable `DISPATCH_API_AUTH_KEY` to set the authentication key for the Dispatch API.
+
 
 ## Bug Fixes
 
