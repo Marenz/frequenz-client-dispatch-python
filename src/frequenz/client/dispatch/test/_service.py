@@ -40,12 +40,6 @@ from frequenz.client.common.microgrid import MicrogridId
 from .._internal_types import DispatchCreateRequest
 from ..types import Dispatch, DispatchEvent, DispatchId, Event
 
-ALL_KEY = "all"
-"""Key that has access to all resources in the FakeService."""
-
-NONE_KEY = "none"
-"""Key that has no access to any resources in the FakeService."""
-
 _logger = logging.getLogger(__name__)
 
 
@@ -84,63 +78,21 @@ class FakeService:
 
         self._last_id = max(self._last_id, max(dispatch.id for dispatch in dispatches))
 
-    def _check_access(self, metadata: grpc.aio.Metadata) -> None:
-        """Check if the access key is valid.
-
-        Args:
-            metadata: The metadata.
-
-        Raises:
-            grpc.RpcError: If the access key is invalid.
-        """
-        # metadata is a weird tuple of tuples, we don't like it
-        metadata_dict = dict(metadata)
-
-        if "key" not in metadata_dict:
-            raise grpc.RpcError(
-                grpc.StatusCode.UNAUTHENTICATED,
-                "No access key provided",
-            )
-
-        key = metadata_dict["key"]
-
-        if key is None:
-            raise grpc.RpcError(
-                grpc.StatusCode.UNAUTHENTICATED,
-                "No access key provided",
-            )
-
-        if key == NONE_KEY:
-            raise grpc.RpcError(
-                grpc.StatusCode.PERMISSION_DENIED,
-                "Permission denied",
-            )
-
-        if key != ALL_KEY:
-            raise grpc.RpcError(
-                grpc.StatusCode.UNAUTHENTICATED,
-                "Invalid access key",
-            )
-
     # pylint: disable=invalid-name
     async def ListMicrogridDispatches(
         self,
         request: ListMicrogridDispatchesRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> ListMicrogridDispatchesResponse:
         """List microgrid dispatches.
 
         Args:
             request: The request.
-            metadata: The metadata.
             timeout: timeout for the request, ignored in this mock.
 
         Returns:
             The dispatch list.
         """
-        self._check_access(metadata)
-
         grid_dispatches = self.dispatches.get(MicrogridId(request.microgrid_id), [])
 
         return ListMicrogridDispatchesResponse(
@@ -159,14 +111,12 @@ class FakeService:
     async def StreamMicrogridDispatches(
         self,
         request: StreamMicrogridDispatchesRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> AsyncIterator[StreamMicrogridDispatchesResponse]:
         """Stream microgrid dispatches changes.
 
         Args:
             request: The request.
-            metadata: The metadata.
             timeout: timeout for the request, ignored in this mock.
 
         Returns:
@@ -175,8 +125,6 @@ class FakeService:
         Yields:
             An event for each dispatch change.
         """
-        self._check_access(metadata)
-
         receiver = self._stream_channel.new_receiver()
 
         async for message in receiver:
@@ -231,11 +179,9 @@ class FakeService:
     async def CreateMicrogridDispatch(
         self,
         request: PBDispatchCreateRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> CreateMicrogridDispatchResponse:
         """Create a new dispatch."""
-        self._check_access(metadata)
         microgrid_id = MicrogridId(request.microgrid_id)
         self._last_id = DispatchId(int(self._last_id) + 1)
 
@@ -261,12 +207,9 @@ class FakeService:
     async def UpdateMicrogridDispatch(
         self,
         request: UpdateMicrogridDispatchRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> UpdateMicrogridDispatchResponse:
         """Update a dispatch."""
-        self._check_access(metadata)
-
         microgrid_id = MicrogridId(request.microgrid_id)
         grid_dispatches = self.dispatches.get(microgrid_id, [])
         index = next(
@@ -355,11 +298,9 @@ class FakeService:
     async def GetMicrogridDispatch(
         self,
         request: GetMicrogridDispatchRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> GetMicrogridDispatchResponse:
         """Get a single dispatch."""
-        self._check_access(metadata)
         microgrid_id = MicrogridId(request.microgrid_id)
         grid_dispatches = self.dispatches.get(microgrid_id, [])
         dispatch = next(
@@ -380,11 +321,9 @@ class FakeService:
     async def DeleteMicrogridDispatch(
         self,
         request: DeleteMicrogridDispatchRequest,
-        metadata: grpc.aio.Metadata,
         timeout: int = 5,  # pylint: disable=unused-argument
     ) -> Empty:
         """Delete a given dispatch."""
-        self._check_access(metadata)
         microgrid_id = MicrogridId(request.microgrid_id)
         grid_dispatches = self.dispatches.get(microgrid_id, [])
 

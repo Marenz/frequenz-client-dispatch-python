@@ -60,7 +60,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         self,
         *,
         server_url: str,
-        key: str,
+        auth_key: str,
+        sign_secret: str | None = None,
         connect: bool = True,
         call_timeout: timedelta = timedelta(seconds=60),
         stream_timeout: timedelta = timedelta(minutes=5),
@@ -69,7 +70,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
         Args:
             server_url: The URL of the server to connect to.
-            key: API key to use for authentication.
+            auth_key: API key to use for authentication.
+            sign_secret: Optional secret for signing requests.
             connect: Whether to connect to the service immediately.
             call_timeout: Timeout for gRPC calls, default is 60 seconds.
             stream_timeout: Timeout for gRPC streams, default is 5 minutes.
@@ -82,8 +84,9 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
                 port=DEFAULT_DISPATCH_PORT,
                 ssl=SslOptions(enabled=True),
             ),
+            auth_key=auth_key,
+            sign_secret=sign_secret,
         )
-        self._metadata = (("key", key),)
         self._streams: dict[
             MicrogridId,
             GrpcStreamBroadcaster[StreamMicrogridDispatchesResponse, DispatchEvent],
@@ -138,7 +141,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
         ```python
         client = DispatchApiClient(
-            key="key",
+            auth_key="key",
+            sign_secret="secret", # Optional so far
             server_url="grpc://dispatch.url.goes.here.example.com"
         )
         async for page in client.list(microgrid_id=MicrogridId(1)):
@@ -199,7 +203,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             response = await cast(
                 Awaitable[ListMicrogridDispatchesResponse],
                 self.stub.ListMicrogridDispatches(
-                    request, metadata=self._metadata, timeout=self._call_timeout_seconds
+                    request, timeout=self._call_timeout_seconds
                 ),
             )
 
@@ -256,7 +260,6 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
                     AsyncIterator[StreamMicrogridDispatchesResponse],
                     self.stub.StreamMicrogridDispatches(
                         request,
-                        metadata=self._metadata,
                         timeout=self._stream_timeout_seconds,
                     ),
                 ),
@@ -327,7 +330,6 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             Awaitable[CreateMicrogridDispatchResponse],
             self.stub.CreateMicrogridDispatch(
                 request.to_protobuf(),
-                metadata=self._metadata,
                 timeout=self._call_timeout_seconds,
             ),
         )
@@ -419,9 +421,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
         response = await cast(
             Awaitable[UpdateMicrogridDispatchResponse],
-            self.stub.UpdateMicrogridDispatch(
-                msg, metadata=self._metadata, timeout=self._call_timeout_seconds
-            ),
+            self.stub.UpdateMicrogridDispatch(msg, timeout=self._call_timeout_seconds),
         )
 
         return Dispatch.from_protobuf(response.dispatch)
@@ -443,9 +443,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         )
         response = await cast(
             Awaitable[GetMicrogridDispatchResponse],
-            self.stub.GetMicrogridDispatch(
-                request, metadata=self._metadata, timeout=self._call_timeout_seconds
-            ),
+            self.stub.GetMicrogridDispatch(request, timeout=self._call_timeout_seconds),
         )
         return Dispatch.from_protobuf(response.dispatch)
 
@@ -464,6 +462,6 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         await cast(
             Awaitable[None],
             self.stub.DeleteMicrogridDispatch(
-                request, metadata=self._metadata, timeout=self._call_timeout_seconds
+                request, timeout=self._call_timeout_seconds
             ),
         )

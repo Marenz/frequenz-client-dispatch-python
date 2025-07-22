@@ -21,7 +21,7 @@ from frequenz.client.dispatch.recurrence import (
     RecurrenceRule,
     Weekday,
 )
-from frequenz.client.dispatch.test.client import ALL_KEY, FakeClient
+from frequenz.client.dispatch.test.client import FakeClient
 from frequenz.client.dispatch.types import (
     Dispatch,
     DispatchId,
@@ -33,7 +33,7 @@ from frequenz.client.dispatch.types import (
 TEST_NOW = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 """Arbitrary time used as NOW for testing."""
 
-ENVIRONMENT_VARIABLES = {"DISPATCH_API_KEY": ALL_KEY}
+ENVIRONMENT_VARIABLES = {"DISPATCH_API_KEY": "test_key"}
 
 
 @pytest.fixture
