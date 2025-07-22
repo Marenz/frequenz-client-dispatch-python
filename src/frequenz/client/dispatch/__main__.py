@@ -201,9 +201,15 @@ async def cli(
         ctx.obj = {}
 
     click.echo(f"Using API URL: {url}", err=True)
-    click.echo(f"Using API Key: {api_key}", err=True)
+    click.echo(f"Using API Auth Key: {api_key[:4]}{'*' * 8}", err=True)
+
     if sign_secret:
-        click.echo(f"Using API Secret: {sign_secret}", err=True)
+        if len(sign_secret) > 8:
+            click.echo(
+                f"Using API Signing Secret: {sign_secret[:4]}{'*' * 8}", err=True
+            )
+        else:
+            click.echo("Using API Signing Secret (not shown).", err=True)
 
     ctx.obj["client"] = DispatchApiClient(
         server_url=url,
