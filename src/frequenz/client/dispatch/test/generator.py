@@ -6,7 +6,9 @@
 import random
 from datetime import datetime, timedelta, timezone
 
-from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
 
 from .._internal_types import rounded_start_time
 from ..recurrence import EndCriteria, Frequency, RecurrenceRule, Weekday
@@ -82,15 +84,15 @@ class DispatchGenerator:
         Returns:
             a random category and type
         """
-        category = self._rng.choice(list(ComponentCategory)[1:])
+        category = self._rng.choice(list(ElectricalComponentCategory)[1:])
         category_type: BatteryType | InverterType | EvChargerType | None = None
 
         match category:
-            case ComponentCategory.BATTERY:
+            case ElectricalComponentCategory.BATTERY:
                 category_type = self._rng.choice(list(BatteryType)[1:])
-            case ComponentCategory.INVERTER:
+            case ElectricalComponentCategory.INVERTER:
                 category_type = self._rng.choice(list(InverterType)[1:])
-            case ComponentCategory.EV_CHARGER:
+            case ElectricalComponentCategory.EV_CHARGER:
                 category_type = self._rng.choice(list(EvChargerType)[1:])
             case _:
                 category_type = None
@@ -116,7 +118,7 @@ class DispatchGenerator:
                 *[
                     # Not yet used
                     # self.generate_target_category_and_type()
-                    self._rng.choice(list(ComponentCategory)[1:])
+                    self._rng.choice(list(ElectricalComponentCategory)[1:])
                     for _ in range(self._rng.randint(1, 10))
                 ]
             ),

@@ -14,7 +14,7 @@ import grpc
 import grpc.aio
 
 # pylint: disable=no-name-in-module
-from frequenz.api.common.v1.pagination.pagination_info_pb2 import PaginationInfo
+from frequenz.api.common.v1alpha8.pagination.pagination_info_pb2 import PaginationInfo
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
     CreateMicrogridDispatchRequest as PBDispatchCreateRequest,
 )
@@ -36,9 +36,10 @@ from google.protobuf.empty_pb2 import Empty
 # pylint: enable=no-name-in-module
 from frequenz.client.base.conversion import to_datetime as _to_dt
 from frequenz.client.common.microgrid import MicrogridId
+from frequenz.client.common.streaming import Event
 
 from .._internal_types import DispatchCreateRequest
-from ..types import Dispatch, DispatchEvent, DispatchId, Event
+from ..types import Dispatch, DispatchEvent, DispatchId
 
 _logger = logging.getLogger(__name__)
 
@@ -148,20 +149,20 @@ class FakeService:
                 if target != dispatch.target:
                     return False
             if _filter.HasField("start_time_interval"):
-                if start_from := _filter.start_time_interval.from_time:
+                if start_from := _filter.start_time_interval.start_time:
                     if dispatch.start_time < _to_dt(start_from):
                         return False
-                if start_to := _filter.start_time_interval.to_time:
+                if start_to := _filter.start_time_interval.end_time:
                     if dispatch.start_time >= _to_dt(start_to):
                         return False
             if _filter.HasField("end_time_interval"):
-                if end_from := _filter.end_time_interval.from_time:
+                if end_from := _filter.end_time_interval.start_time:
                     if (
                         dispatch.duration
                         and dispatch.start_time + dispatch.duration < _to_dt(end_from)
                     ):
                         return False
-                if end_to := _filter.end_time_interval.to_time:
+                if end_to := _filter.end_time_interval.end_time:
                     if (
                         dispatch.duration
                         and dispatch.start_time + dispatch.duration >= _to_dt(end_to)

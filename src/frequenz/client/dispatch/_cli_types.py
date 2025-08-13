@@ -13,6 +13,9 @@ import parsedatetime  # type: ignore
 from tzlocal import get_localzone
 
 from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
 from frequenz.client.dispatch.types import (
     BatteryType,
     EvChargerType,
@@ -177,9 +180,17 @@ class TargetComponentParamType(click.ParamType):
 
         def enum_from_str(
             name: str,
-        ) -> InverterType | BatteryType | EvChargerType | ComponentCategory:
+        ) -> (
+            InverterType
+            | BatteryType
+            | EvChargerType
+            | ElectricalComponentCategory
+            | ComponentCategory
+        ):
             """Convert a string to an enum member."""
             name = name.strip().upper()
+            if name in ElectricalComponentCategory.__members__:
+                return ElectricalComponentCategory[name]
             if name in ComponentCategory.__members__:
                 return ComponentCategory[name]
             if name in InverterType.__members__:
@@ -208,7 +219,7 @@ class TargetComponentParamType(click.ParamType):
             "- METER,INVERTER # A list of component categories\n"
             "- NA_ION,SOLAR # A list of component category types (category is derived)\n"
             "Valid categories:\n"
-            f"{', '.join([cat.name for cat in ComponentCategory])}\n"
+            f"{', '.join([cat.name for cat in ElectricalComponentCategory])}\n"
             "Valid types:\n"
             f"{types_str}\n",
             param,

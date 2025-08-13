@@ -10,13 +10,13 @@ from enum import Enum
 from typing import Any, Self, SupportsInt, TypeAlias, cast, final
 
 # pylint: enable=no-name-in-module
-from frequenz.api.common.v1.microgrid.components.battery_pb2 import (
+from frequenz.api.common.v1alpha8.microgrid.electrical_components.electrical_components_pb2 import (
     BatteryType as PBBatteryType,
 )
-from frequenz.api.common.v1.microgrid.components.ev_charger_pb2 import (
+from frequenz.api.common.v1alpha8.microgrid.electrical_components.electrical_components_pb2 import (
     EvChargerType as PBEvChargerType,
 )
-from frequenz.api.common.v1.microgrid.components.inverter_pb2 import (
+from frequenz.api.common.v1alpha8.microgrid.electrical_components.electrical_components_pb2 import (
     InverterType as PBInverterType,
 )
 
@@ -33,9 +33,31 @@ from google.protobuf.json_format import MessageToDict
 from google.protobuf.struct_pb2 import Struct
 
 from frequenz.client.base.conversion import to_datetime, to_timestamp
-from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.components import (
+    ComponentCategory,
+)
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
+from frequenz.client.common.streaming import Event
 
 from .recurrence import Frequency, RecurrenceRule, Weekday
+
+# Re-export Event for backwards compatibility
+__all__ = [
+    "Event",
+    "Dispatch",
+    "DispatchEvent",
+    "DispatchId",
+    "EvChargerType",
+    "BatteryType",
+    "InverterType",
+    "TargetCategory",
+    "TargetIds",
+    "TargetCategories",
+    "TargetComponents",
+    "TimeIntervalFilter",
+]
 
 
 @final
@@ -81,8 +103,11 @@ class InverterType(Enum):
     BATTERY = PBInverterType.INVERTER_TYPE_BATTERY
     """Battery inverter."""
 
-    SOLAR = PBInverterType.INVERTER_TYPE_SOLAR
+    PV = PBInverterType.INVERTER_TYPE_PV
     """Solar inverter."""
+
+    SOLAR = PBInverterType.INVERTER_TYPE_PV
+    """Deprecated, Solar inverter."""
 
     HYBRID = PBInverterType.INVERTER_TYPE_HYBRID
     """Hybrid inverter."""
@@ -92,11 +117,36 @@ class InverterType(Enum):
 class TargetCategory:
     """Represents a category and optionally a type."""
 
-    target: ComponentCategory | BatteryType | EvChargerType | InverterType
+    target: (
+        ComponentCategory
+        | ElectricalComponentCategory
+        | BatteryType
+        | EvChargerType
+        | InverterType
+    )
     """The target category of the dispatch.
 
     Implicitly derived from the types.
     """
+
+    @property
+    def category2(self) -> ElectricalComponentCategory:
+        """Get the category of the target.
+
+        Returns:
+            The category of the target.
+        """
+        match self.target:
+            case ElectricalComponentCategory():
+                return self.target
+            case ComponentCategory():
+                return ElectricalComponentCategory(self.target.value)
+            case BatteryType():
+                return ElectricalComponentCategory.BATTERY
+            case EvChargerType():
+                return ElectricalComponentCategory.EV_CHARGER
+            case InverterType():
+                return ElectricalComponentCategory.INVERTER
 
     @property
     def category(self) -> ComponentCategory:
@@ -106,6 +156,8 @@ class TargetCategory:
             The category of the target.
         """
         match self.target:
+            case ElectricalComponentCategory():
+                return ComponentCategory(self.target.value)
             case ComponentCategory():
                 return self.target
             case BatteryType():
@@ -151,7 +203,12 @@ class TargetIds(frozenset[int]):
 
 # Define the union of types that can be passed to TargetCategories constructor
 TargetCategoryInputType = (
-    TargetCategory | ComponentCategory | BatteryType | InverterType | EvChargerType
+    TargetCategory
+    | ComponentCategory
+    | ElectricalComponentCategory
+    | BatteryType
+    | InverterType
+    | EvChargerType
 )
 """Type for the input to TargetCategories constructor."""
 
@@ -180,8 +237,18 @@ class TargetCategories(frozenset[TargetCategory]):
         for item in categories_input:
             if isinstance(item, TargetCategory):
                 processed_elements.append(item)
+            elif isinstance(item, ComponentCategory):
+                processed_elements.append(
+                    TargetCategory(target=ElectricalComponentCategory(item.value))
+                )
             elif isinstance(
-                item, (ComponentCategory, BatteryType, InverterType, EvChargerType)
+                item,
+                (
+                    ElectricalComponentCategory,
+                    BatteryType,
+                    InverterType,
+                    EvChargerType,
+                ),
             ):
                 # Wrap raw categories/types into TargetCategory instances
                 processed_elements.append(TargetCategory(target=item))
@@ -236,7 +303,7 @@ def _target_components_from_protobuf(
         case "component_categories":
             return TargetCategories(
                 *map(
-                    ComponentCategory.from_proto,
+                    ElectricalComponentCategory.from_proto,
                     pb_target.component_categories.categories,
                 )
             )
@@ -244,7 +311,7 @@ def _target_components_from_protobuf(
             return TargetCategories(
                 *map(
                     lambda cat_and_type: _extract_category_type(cat_and_type)
-                    or ComponentCategory.from_proto(cat_and_type.category),
+                    or ElectricalComponentCategory.from_proto(cat_and_type.category),
                     pb_target.component_categories_types.categories,
                 )
             )
@@ -274,41 +341,7 @@ def _extract_category_type(
             return None
 
 
-# Old, soon deprecated way to specify categories
 def _target_components_to_protobuf(
-    target: TargetComponents,
-) -> PBTargetComponents:
-    """Convert target components to protobuf.
-
-    Args:
-        target: The target components to convert.
-
-    Raises:
-        ValueError: If the target components are invalid.
-
-    Returns:
-        The converted protobuf target components.
-    """
-    pb_target = PBTargetComponents()
-    match target:
-        case TargetIds(component_ids):
-            pb_target.component_ids.ids.extend(component_ids)
-        case TargetCategories(categories):
-            # Old, soon deprecated way to specify categories
-            pb_target.component_categories.categories.extend(
-                map(
-                    lambda cat: cat.category.to_proto(),
-                    categories,
-                )
-            )
-
-        case _:
-            raise ValueError(f"Invalid target components: {target}")
-    return pb_target
-
-
-# New, not yet supported way to specify categories and types
-def _target_components_to_protobuf_new(
     target: TargetComponents,
 ) -> PBTargetComponents:
     """Convert target components to protobuf.
@@ -329,7 +362,7 @@ def _target_components_to_protobuf_new(
         case TargetCategories(categories):
             for category in categories:
                 pb_category = pb_target.component_categories_types.categories.add()
-                pb_category.category = category.category.to_proto()
+                pb_category.category = category.category2.to_proto()
 
                 match category.type:
                     case BatteryType():
@@ -615,15 +648,6 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
                 recurrence=self.recurrence.to_protobuf() if self.recurrence else None,
             ),
         )
-
-
-class Event(Enum):
-    """Enum representing the type of event that occurred during a dispatch operation."""
-
-    UNSPECIFIED = StreamMicrogridDispatchesResponse.Event.EVENT_UNSPECIFIED
-    CREATED = StreamMicrogridDispatchesResponse.Event.EVENT_CREATED
-    UPDATED = StreamMicrogridDispatchesResponse.Event.EVENT_UPDATED
-    DELETED = StreamMicrogridDispatchesResponse.Event.EVENT_DELETED
 
 
 @dataclass(kw_only=True, frozen=True)

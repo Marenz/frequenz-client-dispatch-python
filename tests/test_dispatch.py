@@ -9,7 +9,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 import time_machine
 
-from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
 from frequenz.client.dispatch.recurrence import Frequency, RecurrenceRule, Weekday
 from frequenz.client.dispatch.types import (
     Dispatch,
@@ -30,7 +32,7 @@ def dispatch_base() -> Dispatch:
         type="TypeA",
         start_time=CURRENT_TIME,
         duration=timedelta(minutes=20),
-        target=TargetCategories(ComponentCategory.BATTERY),
+        target=TargetCategories(ElectricalComponentCategory.BATTERY),
         active=True,
         dry_run=False,
         payload={},

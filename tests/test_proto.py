@@ -6,7 +6,9 @@
 from datetime import datetime, timedelta, timezone
 
 from frequenz.client.common.microgrid import MicrogridId
-from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
 from frequenz.client.dispatch._internal_types import DispatchCreateRequest
 from frequenz.client.dispatch.recurrence import (
     EndCriteria,
@@ -24,31 +26,33 @@ from frequenz.client.dispatch.types import (
     TargetCategory,
     TargetIds,
     _target_components_from_protobuf,
-    _target_components_to_protobuf_new,
+    _target_components_to_protobuf,
 )
 
 CaT = TargetCategory
 """Shortcut for the lazy."""
 
 
-def test_target_components_new() -> None:
+def test_target_components() -> None:
     """Test the target components."""
     for components in (
         TargetIds(1, 2, 3),
         TargetIds(10, 20, 30),
-        TargetCategories(ComponentCategory.BATTERY),
-        TargetCategories(ComponentCategory.GRID),
-        TargetCategories(ComponentCategory.METER),
-        TargetCategories(ComponentCategory.EV_CHARGER, ComponentCategory.BATTERY),
+        TargetCategories(ElectricalComponentCategory.BATTERY),
+        TargetCategories(ElectricalComponentCategory.GRID_CONNECTION_POINT),
+        TargetCategories(ElectricalComponentCategory.METER),
+        TargetCategories(
+            ElectricalComponentCategory.EV_CHARGER, ElectricalComponentCategory.BATTERY
+        ),
         TargetCategories(TargetCategory(BatteryType.LI_ION)),
         TargetCategories(
             TargetCategory(BatteryType.NA_ION),
-            TargetCategory(InverterType.SOLAR),
+            TargetCategory(InverterType.PV),
             TargetCategory(EvChargerType.AC),
-            TargetCategory(ComponentCategory.METER),
+            TargetCategory(ElectricalComponentCategory.METER),
         ),
     ):
-        protobuf = _target_components_to_protobuf_new(components)
+        protobuf = _target_components_to_protobuf(components)
         assert _target_components_from_protobuf(protobuf) == components
 
 
@@ -138,7 +142,7 @@ def test_dispatch() -> None:
             start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
             end_time=datetime(2024, 11, 20, tzinfo=timezone.utc),
             duration=timedelta(seconds=20),
-            target=TargetCategories(ComponentCategory.BATTERY),
+            target=TargetCategories(ElectricalComponentCategory.BATTERY),
             active=False,
             dry_run=True,
             payload={"key": "value1"},
@@ -158,7 +162,7 @@ def test_dispatch() -> None:
             start_time=datetime(2024, 11, 10, tzinfo=timezone.utc),
             end_time=None,
             duration=timedelta(seconds=20),
-            target=TargetCategories(ComponentCategory.BATTERY),
+            target=TargetCategories(ElectricalComponentCategory.BATTERY),
             active=False,
             dry_run=True,
             payload={"key": "value1"},
