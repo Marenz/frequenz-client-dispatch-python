@@ -4,6 +4,7 @@
 """Dispatch API client for Python."""
 from __future__ import annotations
 
+import warnings
 from datetime import datetime, timedelta
 from typing import Any, AsyncIterator, Awaitable, Iterator, Literal, cast
 
@@ -58,7 +59,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         self,
         *,
         server_url: str,
-        auth_key: str,
+        auth_key: str | None = None,
+        key: str | None = None,
         sign_secret: str | None = None,
         connect: bool = True,
         call_timeout: timedelta = timedelta(seconds=60),
@@ -69,11 +71,27 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         Args:
             server_url: The URL of the server to connect to.
             auth_key: API key to use for authentication.
+            key: Deprecated, use `auth_key` instead.
             sign_secret: Optional secret for signing requests.
             connect: Whether to connect to the service immediately.
             call_timeout: Timeout for gRPC calls, default is 60 seconds.
             stream_timeout: Timeout for gRPC streams, default is 5 minutes.
+
+        Raises:
+            TypeError: If neither `auth_key` nor `key` is provided.
         """
+        if key is not None:
+            warnings.warn(
+                "The `key` parameter is deprecated, use `auth_key` instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+        auth_key = auth_key or key
+        if auth_key is None:
+            raise TypeError(
+                "__init__() missing 1 required keyword-only argument: 'auth_key'"
+            )
+
         super().__init__(
             server_url,
             dispatch_pb2_grpc.MicrogridDispatchServiceStub,
