@@ -13,7 +13,9 @@ from asyncclick.testing import CliRunner
 from tzlocal import get_localzone
 
 from frequenz.client.common.microgrid import MicrogridId
-from frequenz.client.common.microgrid.components import ComponentCategory
+from frequenz.client.common.microgrid.electrical_components import (
+    ElectricalComponentCategory,
+)
 from frequenz.client.dispatch.__main__ import cli
 from frequenz.client.dispatch.recurrence import (
     EndCriteria,
@@ -238,7 +240,7 @@ async def test_list_command(
             "test",
             timedelta(hours=1),
             timedelta(seconds=3600),
-            TargetCategories(ComponentCategory.BATTERY),
+            TargetCategories(ElectricalComponentCategory.BATTERY),
             {"active": False},
             RecurrenceRule(),
             0,
@@ -309,7 +311,7 @@ async def test_list_command(
             "test",
             timedelta(hours=1),
             timedelta(seconds=3600),
-            TargetCategories(ComponentCategory.CHP),
+            TargetCategories(ElectricalComponentCategory.CHP),
             {},
             RecurrenceRule(
                 frequency=Frequency.HOURLY,
@@ -344,7 +346,7 @@ async def test_list_command(
             "test50",
             timedelta(hours=5),
             timedelta(seconds=3600),
-            TargetCategories(ComponentCategory.EV_CHARGER),
+            TargetCategories(ElectricalComponentCategory.EV_CHARGER),
             {},
             RecurrenceRule(
                 frequency=Frequency.DAILY,
@@ -372,7 +374,7 @@ async def test_list_command(
             "test_start_immediately",
             "NOW",
             timedelta(seconds=3600),
-            TargetCategories(ComponentCategory.BATTERY),
+            TargetCategories(ElectricalComponentCategory.BATTERY),
             {},
             RecurrenceRule(),
             0,
@@ -457,7 +459,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    target=TargetCategories(ComponentCategory.BATTERY),
+                    target=TargetCategories(ElectricalComponentCategory.BATTERY),
                     active=True,
                     dry_run=False,
                     payload={},
@@ -481,7 +483,7 @@ async def test_create_command(
                     type="test",
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
-                    target=TargetCategories(ComponentCategory.BATTERY),
+                    target=TargetCategories(ElectricalComponentCategory.BATTERY),
                     active=True,
                     dry_run=False,
                     payload={},
@@ -508,7 +510,8 @@ async def test_create_command(
                     start_time=datetime(2023, 1, 1, 0, 0, 0),
                     duration=timedelta(seconds=3600),
                     target=TargetCategories(
-                        ComponentCategory.BATTERY, ComponentCategory.EV_CHARGER
+                        ElectricalComponentCategory.BATTERY,
+                        ElectricalComponentCategory.EV_CHARGER,
                     ),
                     active=True,
                     dry_run=False,
@@ -524,9 +527,9 @@ async def test_create_command(
             ],
             {
                 "target": TargetCategories(
-                    ComponentCategory.BATTERY,
-                    ComponentCategory.EV_CHARGER,
-                    ComponentCategory.CHP,
+                    ElectricalComponentCategory.BATTERY,
+                    ElectricalComponentCategory.EV_CHARGER,
+                    ElectricalComponentCategory.CHP,
                 ),
             },
             0,
