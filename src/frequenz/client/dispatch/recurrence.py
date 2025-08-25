@@ -197,8 +197,11 @@ class RecurrenceRule:
             The rrule object.
 
         Raises:
-            ValueError: If the interval is 0.
+            ValueError: If the interval is 0 or the frequency is UNSPECIFIED.
         """
+        if self.frequency == Frequency.UNSPECIFIED:
+            raise ValueError("Frequency must be specified")
+
         if self.interval == 0:
             raise ValueError("Interval must be greater than 0")
 
