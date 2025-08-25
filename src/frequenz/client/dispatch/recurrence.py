@@ -211,7 +211,10 @@ class RecurrenceRule:
             until = end.until
 
         rrule_obj = rrule.rrule(
-            freq=_RRULE_FREQ_MAP[self.frequency],
+            # Mypy expects a Literal for the `freq` argument, but it can't infer
+            # that the values from the `_RRULE_FREQ_MAP` dictionary are of the
+            # correct type.
+            freq=_RRULE_FREQ_MAP[self.frequency],  # type: ignore[arg-type]
             dtstart=start_time,
             count=count,
             until=until,
