@@ -197,8 +197,11 @@ class RecurrenceRule:
             The rrule object.
 
         Raises:
-            ValueError: If the interval is 0.
+            ValueError: If the interval is 0 or the frequency is UNSPECIFIED.
         """
+        if self.frequency == Frequency.UNSPECIFIED:
+            raise ValueError("Frequency must be specified")
+
         if self.interval == 0:
             raise ValueError("Interval must be greater than 0")
 
@@ -208,7 +211,10 @@ class RecurrenceRule:
             until = end.until
 
         rrule_obj = rrule.rrule(
-            freq=_RRULE_FREQ_MAP[self.frequency],
+            # Mypy expects a Literal for the `freq` argument, but it can't infer
+            # that the values from the `_RRULE_FREQ_MAP` dictionary are of the
+            # correct type.
+            freq=_RRULE_FREQ_MAP[self.frequency],  # type: ignore[arg-type]
             dtstart=start_time,
             count=count,
             until=until,
