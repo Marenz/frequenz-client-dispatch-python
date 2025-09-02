@@ -9,6 +9,7 @@ import logging
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from typing import AsyncIterator
+from unittest.mock import AsyncMock, MagicMock
 
 import grpc
 import grpc.aio
@@ -109,7 +110,7 @@ class FakeService:
             ),
         )
 
-    async def StreamMicrogridDispatches(
+    def StreamMicrogridDispatches(
         self,
         request: StreamMicrogridDispatchesRequest,
         timeout: int = 5,  # pylint: disable=unused-argument
@@ -122,20 +123,37 @@ class FakeService:
 
         Returns:
             An async generator for dispatch changes.
-
-        Yields:
-            An event for each dispatch change.
         """
-        receiver = self._stream_channel.new_receiver()
 
-        async for message in receiver:
-            _logger.debug("Received message: %s", message)
-            if message.microgrid_id == MicrogridId(request.microgrid_id):
-                response = StreamMicrogridDispatchesResponse(
-                    event=message.event.event.value,
-                    dispatch=message.event.dispatch.to_protobuf(),
-                )
-                yield response
+        async def stream() -> AsyncIterator[StreamMicrogridDispatchesResponse]:
+            """Stream microgrid dispatches changes."""
+            _logger.debug("Starting stream for microgrid %s", request.microgrid_id)
+            receiver = self._stream_channel.new_receiver()
+
+            async for message in receiver:
+                _logger.debug("Received message: %s", message)
+                if message.microgrid_id == MicrogridId(request.microgrid_id):
+                    response = StreamMicrogridDispatchesResponse(
+                        event=message.event.event.value,
+                        dispatch=message.event.dispatch.to_protobuf(),
+                    )
+                    yield response
+                else:
+                    _logger.debug(
+                        "Skipping message for microgrid %s",
+                        message.microgrid_id,
+                    )
+
+        _logger.debug("Creating mock stream for microgrid %s", request.microgrid_id)
+
+        mock_stream = MagicMock(name="StreamMicrogridDispatches")
+        mock_stream.__aiter__.side_effect = stream
+        mock_stream.initial_metadata = AsyncMock(
+            side_effect=lambda: _logger.debug(
+                "Initial metadata requested for microgrid %s", request.microgrid_id
+            )
+        )
+        return mock_stream
 
     # pylint: disable=too-many-branches
     @staticmethod
