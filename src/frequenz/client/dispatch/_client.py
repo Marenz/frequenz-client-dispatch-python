@@ -270,12 +270,9 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             request = StreamMicrogridDispatchesRequest(microgrid_id=int(microgrid_id))
             broadcaster = GrpcStreamBroadcaster(
                 stream_name="StreamMicrogridDispatches",
-                stream_method=lambda: cast(
-                    AsyncIterator[StreamMicrogridDispatchesResponse],
-                    self.stub.StreamMicrogridDispatches(
-                        request,
-                        timeout=self._stream_timeout_seconds,
-                    ),
+                stream_method=lambda: self.stub.StreamMicrogridDispatches(
+                    request,
+                    timeout=self._stream_timeout_seconds,
                 ),
                 transform=DispatchEvent.from_protobuf,
                 retry_strategy=LinearBackoff(interval=1, limit=None),
