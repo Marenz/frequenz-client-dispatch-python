@@ -14,4 +14,4 @@
 
 ## Bug Fixes
 
-<!-- Here goes notable bug fixes that are worth a special mention or explanation -->
+* The `FakeService` filter list code is now properly checking for unset fields to filter for.
