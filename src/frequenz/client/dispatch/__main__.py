@@ -273,6 +273,8 @@ async def cli(  # pylint: disable=too-many-arguments, too-many-positional-argume
 @click.option("--end-to", type=FuzzyDateTime())
 @click.option("--active", type=bool)
 @click.option("--dry-run", type=bool)
+@click.option("--dispatch-ids", type=int, multiple=True)
+@click.option("--filter-queries", type=str, multiple=True)
 @click.option("--page-size", type=int)
 @click.option("--running", type=bool)
 @click.option("--type", "-T", type=str)
@@ -282,6 +284,10 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
     Lists all dispatches for MICROGRID_ID that match the given filters.
 
     The target option can be given multiple times.
+
+    The filter-queries option supports text-based filtering on dispatch id and type fields.
+    IDs are prefixed with '#' (e.g., '#4'), types are matched as substrings
+    (e.g., 'bar' matches 'foobar'). Multiple queries are combined with logical OR.
     """
     filter_running: bool = filters.pop("running", False)
     filter_type: str | None = filters.pop("type", None)
@@ -290,6 +296,14 @@ async def list_(ctx: click.Context, /, **filters: Any) -> None:
         target = filters.pop("target")
         # Name of the parameter in client.list()
         filters["target_components"] = target
+
+    # Convert dispatch_ids to iterator to match client.list() parameter type
+    if "dispatch_ids" in filters:
+        filters["dispatch_ids"] = iter(filters["dispatch_ids"])
+
+    # Convert filter_queries to iterator to match client.list() parameter type
+    if "filter_queries" in filters:
+        filters["filter_queries"] = iter(filters["filter_queries"])
 
     num_dispatches = 0
     num_filtered = 0

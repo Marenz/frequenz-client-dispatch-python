@@ -10,8 +10,11 @@
 
 ## New Features
 
-<!-- Here goes the main new features and examples or instructions on how to use them -->
+* Added support for `dispatch_ids` and `queries` filters in the `list` method
+  - `dispatch_ids` parameter allows filtering by specific dispatch IDs
+  - `filter_queries` parameter supports text-based filtering on dispatch `id` and `type` fields
+      - Query format: IDs are prefixed with `#` (e.g., `#4`), types are matched as substrings (e.g., `bar` matches `foobar`)
+      - Multiple queries are combined with logical OR
 
 ## Bug Fixes
 
-* The `FakeService` filter list code is now properly checking for unset fields to filter for.
