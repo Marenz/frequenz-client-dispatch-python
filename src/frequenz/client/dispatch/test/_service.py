@@ -149,20 +149,23 @@ class FakeService:
                 if target != dispatch.target:
                     return False
             if _filter.HasField("start_time_interval"):
-                if start_from := _filter.start_time_interval.start_time:
+                if _filter.start_time_interval.HasField("start_time"):
+                    start_from = _filter.start_time_interval.start_time
                     if dispatch.start_time < _to_dt(start_from):
                         return False
-                if start_to := _filter.start_time_interval.end_time:
+                if _filter.start_time_interval.HasField("end_time"):
+                    start_to = _filter.start_time_interval.end_time
                     if dispatch.start_time >= _to_dt(start_to):
                         return False
             if _filter.HasField("end_time_interval"):
-                if end_from := _filter.end_time_interval.start_time:
-                    if (
-                        dispatch.duration
-                        and dispatch.start_time + dispatch.duration < _to_dt(end_from)
+                if _filter.end_time_interval.HasField("start_time"):
+                    end_from = _filter.end_time_interval.start_time
+                    if dispatch.duration and (
+                        dispatch.start_time + dispatch.duration < _to_dt(end_from)
                     ):
                         return False
-                if end_to := _filter.end_time_interval.end_time:
+                if _filter.end_time_interval.HasField("end_time"):
+                    end_to = _filter.end_time_interval.end_time
                     if (
                         dispatch.duration
                         and dispatch.start_time + dispatch.duration >= _to_dt(end_to)
