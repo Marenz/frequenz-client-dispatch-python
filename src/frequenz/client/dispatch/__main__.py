@@ -5,6 +5,7 @@
 
 import asyncio
 import os
+import shlex
 from datetime import datetime, timezone
 from pprint import pformat
 from typing import Any, List
@@ -671,7 +672,7 @@ async def interactive_mode(url: str, auth_key: str, sign_secret: str | None) -> 
             params = (
                 ["--url", url, "--auth-key", auth_key]
                 + (["--sign-secret", sign_secret] if sign_secret else [])
-                + click.parser.split_arg_string(user_input)
+                + shlex.split(user_input)
             )
 
             try:
