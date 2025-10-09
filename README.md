@@ -12,31 +12,58 @@ If you're a developer who needs direct access to the [Dispatch API](https://gith
 
 ## 📦 Installation
 
+### Using pip
+
 Install the library via pip:
 
 ```bash
 pip install frequenz-client-dispatch
 ```
 
-## 🛠️ Usage
+### Using Poetry
 
-Here's a quick example to get you started:
+If you're using Poetry for dependency management:
+
+```bash
+poetry add frequenz-client-dispatch
+```
+
+### From Source
+
+To install from source:
+
+```bash
+git clone https://github.com/frequenz-floss/frequenz-client-dispatch-python.git
+cd frequenz-client-dispatch-python
+pip install -e .
+```
+
+## 🚀 Quick Start
+
+Get up and running in minutes with this simple example:
 
 ```python
 from frequenz.client.dispatch import DispatchApiClient
 import asyncio
 
-async def print_dispatches():
-    # Initialize the client
-    client = DispatchApiClient(key="your_api_key", server_url="grpc://dispatch.url.goes.here.example.com")
+async def main():
+    # Initialize the client with your API credentials
+    client = DispatchApiClient(
+        auth_key="your_auth_key_here",
+        sign_secret="your_sign_secret_here",
+        server_url="grpc://dispatch.url.goes.here.example.com"
+    )
 
-    # List all dispatches for a specific microgrid
+    # List all dispatches for microgrid ID 1
     async for page in client.list(microgrid_id=1):
         for dispatch in page:
-            print(dispatch)
+            print(f"Dispatch ID: {dispatch.id}")
+            print(f"Type: {dispatch.type}")
+            print(f"Start Time: {dispatch.start_time}")
+            print("---")
 
-# Run the Example
-asyncio.run(print_dispatches())
+# Run the example
+asyncio.run(main())
 ```
 
 For detailed usage and advanced features, check out the [client documentation](https://frequenz-floss.github.io/frequenz-client-dispatch-python/latest/reference/frequenz/client/dispatch/#frequenz.client.dispatch.ApiDispatchClient).
