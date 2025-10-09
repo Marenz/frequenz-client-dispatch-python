@@ -145,6 +145,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         end_to: datetime | None = None,
         active: bool | None = None,
         dry_run: bool | None = None,
+        dispatch_ids: Iterator[DispatchId] = iter(()),
+        filter_queries: Iterator[str] = iter(()),
         page_size: int | None = None,
     ) -> AsyncIterator[Iterator[Dispatch]]:
         """List dispatches.
@@ -166,6 +168,17 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
                 print(dispatch)
         ```
 
+        The `filter_queries` parameter is applied to the dispatch `id` and `type` fields.
+        Each query in the list is applied as a logical OR.
+
+        ID tokens are preceded by a `#` so we can tell if an id is intended or a type.
+
+        - input of [`#4`] will match only the record with id of `4`
+        - input of [`#not_an_id`] will match types containing `#not_an_id`
+        - input of [`bar`] will match `bar` and `foobar`
+        - input of [`#4`, `#24`, `bar`, `foo`] will match ids of `4` and `24` and
+          types `foo` `bar` `foobar` `foolish bartender`
+
         Args:
             microgrid_id: The microgrid_id to list dispatches for.
             target_components: optional, list of component ids or categories to filter by.
@@ -175,6 +188,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             end_to: optional, filter by end_time < end_to.
             active: optional, filter by active status.
             dry_run: optional, filter by dry_run status.
+            dispatch_ids: optional, list of dispatch IDs to filter by.
+            filter_queries: optional, list of text queries to filter by.
             page_size: optional, number of dispatches to return per page.
 
         Returns:
@@ -203,6 +218,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             end_time_interval=end_time_interval,
             is_active=active,
             is_dry_run=dry_run,
+            dispatch_ids=list(map(int, dispatch_ids)),
+            queries=list(filter_queries),
         )
 
         request = ListMicrogridDispatchesRequest(

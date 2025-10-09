@@ -113,6 +113,121 @@ async def test_list_dispatches(
             assert dispatch == service_side_dispatch
 
 
+# pylint: disable-next=too-many-locals
+async def test_list_filter_queries(
+    client: FakeClient, generator: DispatchGenerator
+) -> None:
+    """Test listing dispatches with filter queries."""
+    microgrid_id = MicrogridId(1)
+
+    all_dispatches = [generator.generate_dispatch() for _ in range(100)]
+    client.set_dispatches(
+        microgrid_id=microgrid_id,
+        value=all_dispatches,
+    )
+
+    # Filter by type
+    filter_type = all_dispatches[0].type
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter([filter_type]),
+    )
+    async for page in dispatches:
+        for dispatch in page:
+            assert dispatch.type == filter_type
+
+    # Filter by id (needs to prefix with #)
+    filter_target_id = all_dispatches[0].id
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter([f"#{int(filter_target_id)}"]),
+    )
+    async for page in dispatches:
+        for dispatch in page:
+            assert dispatch.id == filter_target_id
+
+    # Mixed filter - validate OR behavior with type and id
+    filter_mixed = [all_dispatches[3].type, f"#{int(all_dispatches[4].id)}"]
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter(filter_mixed),
+    )
+    async for page in dispatches:
+        for dispatch in page:
+            assert (
+                dispatch.type == all_dispatches[3].type
+                or dispatch.id == all_dispatches[4].id
+            )
+
+    # Test OR behavior with multiple types - validate both dispatches are found
+    type1 = all_dispatches[5].type
+    type2 = all_dispatches[6].type
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter([type1, type2]),
+    )
+    found_dispatches = []
+    async for page in dispatches:
+        for dispatch in page:
+            assert dispatch.type in (type1, type2)
+            found_dispatches.append(dispatch)
+
+    # Verify both dispatches with the specified types are found
+    assert len(found_dispatches) == 2
+    assert any(dispatch.type == type1 for dispatch in found_dispatches)
+    assert any(dispatch.type == type2 for dispatch in found_dispatches)
+
+    # Test OR behavior with multiple IDs - validate both dispatches are found
+    id1 = all_dispatches[7].id
+    id2 = all_dispatches[8].id
+    # Use numeric part only for ID queries (fake service expects just the number)
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter([f"#{int(id1)}", f"#{int(id2)}"]),
+    )
+    found_dispatches = []
+    async for page in dispatches:
+        for dispatch in page:
+            assert dispatch.id in (id1, id2)
+            found_dispatches.append(dispatch)
+
+    # Verify both dispatches with the specified IDs are found
+    assert len(found_dispatches) == 2
+    assert any(dispatch.id == id1 for dispatch in found_dispatches)
+    assert any(dispatch.id == id2 for dispatch in found_dispatches)
+
+    # Test OR behavior with mixed types and IDs - validate all dispatches are found
+    mixed_filter = [
+        all_dispatches[9].type,
+        f"#{int(all_dispatches[10].id)}",
+        all_dispatches[11].type,
+        f"#{int(all_dispatches[12].id)}",
+    ]
+    dispatches = client.list(
+        microgrid_id=microgrid_id,
+        filter_queries=iter(mixed_filter),
+    )
+    found_dispatches = []
+    async for page in dispatches:
+        for dispatch in page:
+            assert (
+                dispatch.type == all_dispatches[9].type
+                or dispatch.id == all_dispatches[10].id
+                or dispatch.type == all_dispatches[11].type
+                or dispatch.id == all_dispatches[12].id
+            )
+            found_dispatches.append(dispatch)
+
+    # Verify all four dispatches with the specified types/IDs are found
+    assert len(found_dispatches) == 4
+    assert any(dispatch.type == all_dispatches[9].type for dispatch in found_dispatches)
+    assert any(dispatch.id == all_dispatches[10].id for dispatch in found_dispatches)
+    assert any(
+        dispatch.type == all_dispatches[11].type for dispatch in found_dispatches
+    )
+    assert any(dispatch.id == all_dispatches[12].id for dispatch in found_dispatches)
+
+
 async def test_list_dispatches_no_duration(
     client: FakeClient, generator: DispatchGenerator
 ) -> None:

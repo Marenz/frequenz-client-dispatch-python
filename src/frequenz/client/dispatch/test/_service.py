@@ -21,6 +21,7 @@ from frequenz.api.dispatch.v1.dispatch_pb2 import (
 from frequenz.api.dispatch.v1.dispatch_pb2 import (
     CreateMicrogridDispatchResponse,
     DeleteMicrogridDispatchRequest,
+    DispatchFilter,
     GetMicrogridDispatchRequest,
     GetMicrogridDispatchResponse,
     ListMicrogridDispatchesRequest,
@@ -177,6 +178,46 @@ class FakeService:
             if _filter.HasField("is_dry_run"):
                 if dispatch.dry_run != _filter.is_dry_run:
                     return False
+
+            if len(_filter.dispatch_ids) > 0 and dispatch.id not in map(
+                DispatchId, _filter.dispatch_ids
+            ):
+                return False
+
+            if not FakeService._matches_query(_filter, dispatch):
+                return False
+
+        return True
+
+    @staticmethod
+    def _matches_query(filter_: DispatchFilter, dispatch: Dispatch) -> bool:
+        """Check if a dispatch matches the query."""
+        # Two cases:
+        #  - query starts with # and is interpretable as int: filter by id
+        #  - otherwise: filter by exact match in 'type' field
+        # Multiple queries use OR logic - dispatch must match at least one
+        if len(filter_.queries) > 0:
+            matches_any_query = False
+            for query in filter_.queries:
+                if query.startswith("#"):
+                    try:
+                        int_id = int(query[1:])
+                    except ValueError:
+                        # not an int, interpret as exact type match (without the #)
+                        if query[1:] == dispatch.type:
+                            matches_any_query = True
+                            break
+                    else:
+                        query_id = DispatchId(int_id)
+                        if dispatch.id == query_id:
+                            matches_any_query = True
+                            break
+                elif query == dispatch.type:
+                    matches_any_query = True
+                    break
+
+            if not matches_any_query:
+                return False
 
         return True
 
