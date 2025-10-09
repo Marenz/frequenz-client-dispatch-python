@@ -15,6 +15,7 @@
   - `filter_queries` parameter supports text-based filtering on dispatch `id` and `type` fields
       - Query format: IDs are prefixed with `#` (e.g., `#4`), types are matched as substrings (e.g., `bar` matches `foobar`)
       - Multiple queries are combined with logical OR
+* Date-only inputs in CLI timestamps now default to midnight UTC instead of using the current time.
 
 ## Bug Fixes
 
