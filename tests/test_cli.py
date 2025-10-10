@@ -17,6 +17,7 @@ from frequenz.client.common.microgrid.electrical_components import (
     ElectricalComponentCategory,
 )
 from frequenz.client.dispatch.__main__ import cli
+from frequenz.client.dispatch._cli_types import FuzzyDateTime
 from frequenz.client.dispatch.recurrence import (
     EndCriteria,
     Frequency,
@@ -739,3 +740,30 @@ async def test_delete_command(
     assert expected_output in result.output
     if dispatches:
         assert len(fake_client.dispatches(MicrogridId(1))) == 0
+
+
+def test_fuzzy_datetime_date_only() -> None:
+    """Test that date-only inputs are parsed as midnight."""
+    fuzzy_dt = FuzzyDateTime()
+
+    # Test date-only input
+    result = fuzzy_dt.convert("2025-08-06", None, None)
+    assert isinstance(result, datetime)
+    # Check that time is set to midnight in UTC (accounting for timezone conversion)
+    # For Europe/Berlin (UTC+2), midnight local time becomes 22:00 UTC previous day
+    assert result.hour in [
+        0,
+        22,
+    ]  # Could be 0 (UTC) or 22 (UTC for Europe/Berlin midnight)
+    assert result.minute == 0
+    assert result.second == 0
+    assert result.microsecond == 0
+
+    # Test date-time input (should preserve time)
+    result_with_time = fuzzy_dt.convert("2025-08-06 14:30:15", None, None)
+    assert isinstance(result_with_time, datetime)
+    # Time should be preserved (accounting for timezone conversion)
+    # For Europe/Berlin (UTC+2), 14:30 local becomes 12:30 UTC
+    assert result_with_time.hour in [12, 14]  # Could be 12 (UTC) or 14 (local)
+    assert result_with_time.minute == 30
+    assert result_with_time.second == 15

@@ -57,6 +57,15 @@ class FuzzyDateTime(click.ParamType):
             if parse_status == 0:
                 self.fail(f"Invalid time expression: {value}", param, ctx)
 
+            # Check if only a date was provided (no time component)
+            # parsedatetime returns status 1 for date-only parsing
+            if parse_status == 1:
+                # Set time to midnight in UTC for date-only inputs
+                # First convert to UTC, then set time to midnight
+                parsed_dt = parsed_dt.astimezone(timezone.utc).replace(
+                    hour=0, minute=0, second=0, microsecond=0
+                )
+
             return cast(datetime, parsed_dt.astimezone(timezone.utc))
         except Exception as e:  # pylint: disable=broad-except
             self.fail(
