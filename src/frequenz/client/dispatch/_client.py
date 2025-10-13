@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import warnings
 from datetime import datetime, timedelta
-from typing import Any, AsyncIterator, Awaitable, Iterator, Literal, cast
+from typing import Any, AsyncIterator, Awaitable, Iterable, Iterator, Literal, cast
 
 # pylint: disable-next=no-name-in-module
 from frequenz.api.common.v1alpha8.pagination.pagination_params_pb2 import (
@@ -138,15 +138,15 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         self,
         microgrid_id: MicrogridId,
         *,
-        target_components: Iterator[TargetComponents] = iter(()),
+        target_components: Iterable[TargetComponents] = (),
         start_from: datetime | None = None,
         start_to: datetime | None = None,
         end_from: datetime | None = None,
         end_to: datetime | None = None,
         active: bool | None = None,
         dry_run: bool | None = None,
-        dispatch_ids: Iterator[DispatchId] = iter(()),
-        filter_queries: Iterator[str] = iter(()),
+        dispatch_ids: Iterable[DispatchId] = (),
+        filter_queries: Iterable[str] = (),
         page_size: int | None = None,
     ) -> AsyncIterator[Iterator[Dispatch]]:
         """List dispatches.
