@@ -10,6 +10,7 @@
 
 ## New Features
 
+* Changed `target_components`, `dispatch_ids`, and `filter_queries` parameters from `Iterator` to `Iterable` in `list` method for better API usability
 * Added support for `dispatch_ids` and `queries` filters in the `list` method
   - `dispatch_ids` parameter allows filtering by specific dispatch IDs
   - `filter_queries` parameter supports text-based filtering on dispatch `id` and `type` fields
@@ -18,4 +19,3 @@
 * Date-only inputs in CLI timestamps now default to midnight UTC instead of using the current time.
 
 ## Bug Fixes
-
