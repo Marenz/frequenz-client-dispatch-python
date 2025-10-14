@@ -55,7 +55,7 @@ email = "floss@frequenz.com"
 
 [project.optional-dependencies]
 cli = [
-  "asyncclick == 8.2.2.2",
+  "asyncclick == 8.3.0.7",
   "prompt-toolkit == 3.0.52",
   "parsedatetime == 2.6",
   "tzlocal == 5.3.1",
