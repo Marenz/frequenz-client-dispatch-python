@@ -37,7 +37,7 @@ classifiers = [
 requires-python = ">= 3.11, < 4"
 dependencies = [
   "typing-extensions >= 4.13.0, < 5",
-  "frequenz-api-dispatch >= 1.0.0-rc3, < 2",
+  "frequenz-api-dispatch >= 1.0.0, < 2",
   "frequenz-client-base >= 0.11.0, < 0.12.0",
   "frequenz-client-common >= 0.3.6, < 0.4.0",
   "frequenz-core >= 1.0.2, < 2.0.0",
@@ -75,7 +75,7 @@ dev-mkdocs = [
   "mike == 2.1.3",
   "mkdocs-gen-files == 0.5.0",
   "mkdocs-literate-nav == 0.6.2",
-  "frequenz-api-dispatch == 1.0.0-rc3",
+  "frequenz-api-dispatch == 1.0.0",
   "mkdocs-macros-plugin == 1.4.0",
   "mkdocs-material == 9.6.21",
   "mkdocstrings[python] == 0.30.1",
@@ -95,7 +95,7 @@ dev-pylint = [
   "pylint == 3.3.9",
   # For checking the noxfile, docs/ script, and tests
   "frequenz-client-dispatch[cli,dev-mkdocs,dev-noxfile,dev-pytest]",
-  "frequenz-api-dispatch == 1.0.0-rc3",
+  "frequenz-api-dispatch == 1.0.0",
 ]
 dev-pytest = [
   "pytest == 8.4.2",
