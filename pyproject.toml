@@ -90,7 +90,7 @@ dev-mypy = [
   "types-protobuf == 6.32.1.20250918",
   "types-python-dateutil == 2.9.0.20251008",
 ]
-dev-noxfile = ["nox == 2025.5.1", "frequenz-repo-config[lib] == 0.13.5"]
+dev-noxfile = ["nox == 2025.10.16", "frequenz-repo-config[lib] == 0.13.5"]
 dev-pylint = [
   "pylint == 3.3.9",
   # For checking the noxfile, docs/ script, and tests
@@ -104,7 +104,7 @@ dev-pytest = [
   "pytest-asyncio == 1.2.0",
   "async-solipsism == 0.8",
   "time-machine == 2.19.0",
-  "hypothesis == 6.140.3",
+  "hypothesis == 6.142.5",
   "frequenz-client-dispatch[cli]",
 ]
 dev = [
