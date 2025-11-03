@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - uses: ad/dependabot-auto-approve@v1
+      - uses: frequenz-floss/dependabot-auto-approve@v1.3.0
         with:
           dependency-type: 'all'
           auto-merge: 'true'
