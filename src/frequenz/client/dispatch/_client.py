@@ -367,7 +367,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
 
         return Dispatch.from_protobuf(response.dispatch)
 
-    async def update(
+    async def update(  # pylint: disable=too-many-branches
         self,
         *,
         microgrid_id: MicrogridId,
