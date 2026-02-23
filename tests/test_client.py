@@ -6,7 +6,7 @@
 import asyncio
 import random
 from dataclasses import replace
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from functools import partial
 
 import grpc
@@ -471,3 +471,36 @@ async def test_dispatch_stream(
 
     # Expect the first dispatch deletion
     await expect(dispatches[0], Event.DELETED)
+
+
+async def test_create_invalid_start_time(client: FakeClient, sample: Dispatch) -> None:
+    """Test that create() raises ValueError for invalid start_time types."""
+    microgrid_id = MicrogridId(random.randint(1, 100))
+    params = to_create_params(microgrid_id, sample)
+
+    for invalid in [0, 1234567890, "2026-01-01T00:00:00", object()]:
+        params["start_time"] = invalid
+        with raises(ValueError):
+            await client.create(**params)
+
+
+async def test_create_naive_datetime_raises(
+    client: FakeClient, sample: Dispatch
+) -> None:
+    """Test that create() raises ValueError for a timezone-naive datetime."""
+    microgrid_id = MicrogridId(random.randint(1, 100))
+    params = to_create_params(microgrid_id, sample)
+    params["start_time"] = datetime(2099, 1, 1, 0, 0, 0)  # naive, no tzinfo
+    with raises(ValueError):
+        await client.create(**params)
+
+
+async def test_create_past_datetime_raises(
+    client: FakeClient, sample: Dispatch
+) -> None:
+    """Test that create() raises ValueError for a start_time in the past."""
+    microgrid_id = MicrogridId(random.randint(1, 100))
+    params = to_create_params(microgrid_id, sample)
+    params["start_time"] = datetime(2000, 1, 1, tzinfo=timezone.utc)
+    with raises(ValueError):
+        await client.create(**params)
