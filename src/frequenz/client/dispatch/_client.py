@@ -2,6 +2,7 @@
 # Copyright © 2024 Frequenz Energy-as-a-Service GmbH
 
 """Dispatch API client for Python."""
+
 from __future__ import annotations
 
 import warnings
@@ -344,6 +345,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
                 or start_time.tzinfo.utcoffset(start_time) is None
             ):
                 raise ValueError("start_time must be timezone aware")
+        elif start_time != "NOW":
+            raise ValueError("start_time must be a datetime or 'NOW'")
 
         request = DispatchCreateRequest(
             microgrid_id=microgrid_id,
