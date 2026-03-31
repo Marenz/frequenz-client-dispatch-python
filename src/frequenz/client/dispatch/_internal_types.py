@@ -3,7 +3,6 @@
 
 """Type wrappers for the generated protobuf messages."""
 
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any, Literal

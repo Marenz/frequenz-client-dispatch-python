@@ -5,6 +5,7 @@
 
 Useful for testing.
 """
+
 import logging
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
