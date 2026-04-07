@@ -65,7 +65,7 @@ def format_recurrence(recurrence: RecurrenceRule) -> str:
 
 def month_name(month: int) -> str:
     """Return the name of the month."""
-    return datetime(2000, month, 1).strftime("%B")
+    return datetime(2000, month, 1, tzinfo=timezone.utc).strftime("%B")
 
 
 # pylint: disable=too-many-statements, too-many-locals
