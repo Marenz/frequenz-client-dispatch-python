@@ -6,7 +6,7 @@
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from enum import Enum
-from typing import Any, Self, SupportsInt, TypeAlias, cast, final
+from typing import Any, Self, SupportsInt, TypeAlias, final
 
 # pylint: enable=no-name-in-module
 from frequenz.api.common.v1alpha8.microgrid.electrical_components.electrical_components_pb2 import (
@@ -540,12 +540,9 @@ class Dispatch:  # pylint: disable=too-many-instance-attributes
             return None
 
         # No type information for rrule, so we need to cast
-        return cast(
-            datetime | None,
-            self.recurrence._as_rrule(  # pylint: disable=protected-access
-                self.start_time
-            ).after(after, inc=True),
-        )
+        return self.recurrence._as_rrule(  # pylint: disable=protected-access
+            self.start_time
+        ).after(after, inc=True)
 
     def _until(self, now: datetime) -> datetime | None:
         """Calculate the time when the dispatch should end.
