@@ -93,7 +93,7 @@ dev-mypy = [
 ]
 dev-noxfile = ["nox == 2026.4.10", "frequenz-repo-config[lib] == 0.18.0"]
 dev-pylint = [
-  "pylint == 4.0.5",
+  "pylint == 4.0.6",
   # For checking the noxfile, docs/ script, and tests
   "frequenz-client-dispatch[cli,dev-mkdocs,dev-noxfile,dev-pytest]",
   "frequenz-api-dispatch == 1.0.0",
@@ -105,7 +105,7 @@ dev-pytest = [
   "pytest-asyncio == 1.4.0",
   "async-solipsism == 0.9",
   "time-machine == 3.2.0",
-  "hypothesis == 6.155.1",
+  "hypothesis == 6.155.7",
   "frequenz-client-dispatch[cli]",
 ]
 dev = [
