@@ -29,7 +29,7 @@ from frequenz.client.dispatch.types import (
 # pylint: disable=inconsistent-return-statements
 
 
-class FuzzyDateTime(click.ParamType):
+class FuzzyDateTime(click.ParamType[datetime | Literal["NOW"] | None]):
     """Try to parse a string as a datetime.
 
     The parser is very permissive and can handle a wide range of time expressions.
@@ -73,7 +73,7 @@ class FuzzyDateTime(click.ParamType):
             )
 
 
-class FuzzyTimeDelta(click.ParamType):
+class FuzzyTimeDelta(click.ParamType[timedelta]):
     """Try to parse a string as a timedelta.
 
     Uses parsedatetime and tries to parse it as relative datetime first that
@@ -118,7 +118,7 @@ class FuzzyTimeDelta(click.ParamType):
                 )
 
 
-class FuzzyIntRange(click.ParamType):
+class FuzzyIntRange(click.ParamType[list[int]]):
     """Try to parse a string as a simple integer range.
 
     Possible formats:
@@ -154,7 +154,7 @@ class FuzzyIntRange(click.ParamType):
             self.fail(f"Invalid integer range: {value}", param, ctx)
 
 
-class TargetComponentParamType(click.ParamType):
+class TargetComponentParamType(click.ParamType[TargetIds | TargetCategories]):
     """Click parameter type for targets."""
 
     name = "target"
@@ -236,7 +236,7 @@ class TargetComponentParamType(click.ParamType):
         )
 
 
-class JsonDictParamType(click.ParamType):
+class JsonDictParamType(click.ParamType[dict[str, Any]]):
     """Click parameter type for JSON strings."""
 
     name = "json"
