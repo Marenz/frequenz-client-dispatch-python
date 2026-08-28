@@ -6,6 +6,7 @@
 import asyncio
 import os
 import shlex
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from pprint import pformat
 from typing import Any, List
@@ -163,6 +164,47 @@ def print_dispatch(dispatch: Dispatch) -> None:
     )
 
 
+def _resolve_credentials(
+    api_key: str | None,
+    auth_key: str | None,
+    sign_secret: str | None,
+    env: Mapping[str, str],
+) -> tuple[str | None, str | None, bool]:
+    """Resolve credentials without mixing key and secret sources.
+
+    Explicit options override the service-specific environment variables, which
+    override the generic Frequenz API variables. Each source is selected as a
+    unit so a key is never combined with a secret from another source.
+
+    Args:
+        api_key: Key passed through the deprecated `--api-key` option.
+        auth_key: Key passed through the canonical `--auth-key` option.
+        sign_secret: Secret passed through `--sign-secret`.
+        env: Environment variables to resolve against.
+
+    Returns:
+        The auth key, signing secret, and whether the deprecated key name was used.
+    """
+    if api_key is not None or auth_key is not None or sign_secret is not None:
+        return auth_key or api_key, sign_secret, api_key is not None and not auth_key
+
+    specific_vars = (
+        "DISPATCH_API_AUTH_KEY",
+        "DISPATCH_API_KEY",
+        "DISPATCH_API_SIGN_SECRET",
+    )
+    if any(var in env for var in specific_vars):
+        specific_auth_key = env.get("DISPATCH_API_AUTH_KEY")
+        specific_api_key = env.get("DISPATCH_API_KEY")
+        return (
+            specific_auth_key or specific_api_key,
+            env.get("DISPATCH_API_SIGN_SECRET"),
+            specific_api_key is not None and not specific_auth_key,
+        )
+
+    return env.get("FREQUENZ_API_KEY"), env.get("FREQUENZ_API_SECRET"), False
+
+
 # Click command groups
 @click.group(invoke_without_command=True)
 @click.option(
@@ -173,23 +215,17 @@ def print_dispatch(dispatch: Dispatch) -> None:
 )
 @click.option(
     "--api-key",
-    help="API key for authentication (deprecated, use --auth-key or DISPATCH_API_AUTH_KEY)",
-    envvar="DISPATCH_API_KEY",
-    show_envvar=True,
+    help="API key for authentication (deprecated, use --auth-key)",
     required=False,
 )
 @click.option(
     "--auth-key",
     help="API auth key for authentication",
-    envvar="DISPATCH_API_AUTH_KEY",
-    show_envvar=True,
     required=False,
 )
 @click.option(
     "--sign-secret",
     help="API signing secret for authentication",
-    envvar="DISPATCH_API_SIGN_SECRET",
-    show_envvar=True,
     required=False,
     default=None,
 )
@@ -213,16 +249,18 @@ async def cli(  # pylint: disable=too-many-arguments, too-many-positional-argume
     if ctx.obj is None:
         ctx.obj = {}
 
-    key = auth_key or api_key
+    auth_key, sign_secret, used_deprecated_key = _resolve_credentials(
+        api_key, auth_key, sign_secret, os.environ
+    )
 
-    if not key:
+    if not auth_key:
         raise click.BadParameter(
-            "You must provide an API auth key using --auth-key or "
-            "the DISPATCH_API_AUTH_KEY environment variable."
+            "You must provide an API auth key using --auth-key, "
+            "DISPATCH_API_AUTH_KEY, or FREQUENZ_API_KEY."
         )
 
     click.echo(f"Using API URL: {url}", err=True)
-    click.echo(f"Using API Auth Key: {key[:4]}{'*' * 8}", err=True)
+    click.echo(f"Using API Auth Key: {auth_key[:4]}{'*' * 8}", err=True)
 
     if sign_secret:
         if len(sign_secret) > 8:
@@ -232,7 +270,7 @@ async def cli(  # pylint: disable=too-many-arguments, too-many-positional-argume
         else:
             click.echo("Using API Signing Secret (not shown).", err=True)
 
-    if api_key and auth_key is None:
+    if used_deprecated_key:
         click.echo(
             click.style(
                 "Deprecation Notice: The --api-key option and the DISPATCH_API_KEY environment "
@@ -246,14 +284,14 @@ async def cli(  # pylint: disable=too-many-arguments, too-many-positional-argume
 
     ctx.obj["client"] = DispatchApiClient(
         server_url=url,
-        auth_key=key,
+        auth_key=auth_key,
         sign_secret=sign_secret,
         connect=True,
     )
 
     ctx.obj["params"] = {
         "url": url,
-        "auth_key": key,
+        "auth_key": auth_key,
         "sign_secret": sign_secret,
     }
 
@@ -261,7 +299,7 @@ async def cli(  # pylint: disable=too-many-arguments, too-many-positional-argume
 
     # Check if a subcommand was given
     if ctx.invoked_subcommand is None:
-        await interactive_mode(url, key, sign_secret)
+        await interactive_mode(url, auth_key, sign_secret)
 
 
 @cli.command("list")

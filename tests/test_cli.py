@@ -16,7 +16,7 @@ from frequenz.client.common.microgrid import MicrogridId
 from frequenz.client.common.microgrid.electrical_components import (
     ElectricalComponentCategory,
 )
-from frequenz.client.dispatch.__main__ import cli
+from frequenz.client.dispatch.__main__ import _resolve_credentials, cli
 from frequenz.client.dispatch._cli_types import FuzzyDateTime
 from frequenz.client.dispatch.recurrence import (
     EndCriteria,
@@ -37,6 +37,65 @@ TEST_NOW = datetime(2023, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
 """Arbitrary time used as NOW for testing."""
 
 ENVIRONMENT_VARIABLES = {"DISPATCH_API_KEY": "test_key"}
+
+
+def test_resolve_credentials_uses_generic_pair() -> None:
+    """Generic credentials are used when no higher-precedence source is set."""
+    env = {
+        "FREQUENZ_API_KEY": "generic-key",
+        "FREQUENZ_API_SECRET": "generic-secret",
+    }
+
+    assert _resolve_credentials(None, None, None, env) == (
+        "generic-key",
+        "generic-secret",
+        False,
+    )
+
+
+def test_resolve_credentials_service_pair_overrides_generic_pair() -> None:
+    """Dispatch-specific credentials override generic credentials as a pair."""
+    env = {
+        "DISPATCH_API_AUTH_KEY": "dispatch-key",
+        "DISPATCH_API_SIGN_SECRET": "dispatch-secret",
+        "FREQUENZ_API_KEY": "generic-key",
+        "FREQUENZ_API_SECRET": "generic-secret",
+    }
+
+    assert _resolve_credentials(None, None, None, env) == (
+        "dispatch-key",
+        "dispatch-secret",
+        False,
+    )
+
+
+def test_resolve_credentials_partial_service_pair_does_not_mix() -> None:
+    """A partial Dispatch pair is not completed from generic credentials."""
+    env = {
+        "DISPATCH_API_AUTH_KEY": "dispatch-key",
+        "FREQUENZ_API_KEY": "generic-key",
+        "FREQUENZ_API_SECRET": "generic-secret",
+    }
+
+    assert _resolve_credentials(None, None, None, env) == (
+        "dispatch-key",
+        None,
+        False,
+    )
+
+
+def test_resolve_credentials_explicit_pair_overrides_environment() -> None:
+    """Explicit options override environment credentials as a pair."""
+    env = {
+        "DISPATCH_API_AUTH_KEY": "dispatch-key",
+        "DISPATCH_API_SIGN_SECRET": "dispatch-secret",
+    }
+
+    assert _resolve_credentials("explicit-key", None, "explicit-secret", env) == (
+        "explicit-key",
+        "explicit-secret",
+        True,
+    )
 
 
 @pytest.fixture

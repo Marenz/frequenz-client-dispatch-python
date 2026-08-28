@@ -12,6 +12,9 @@ Raise `ValueError` when `start_time` passed to `create()` is neither a `datetime
 
 <!-- Here goes the main new features and examples or instructions on how to use them -->
 
+- `dispatch-cli` accepts `FREQUENZ_API_KEY` and `FREQUENZ_API_SECRET` as a
+  fallback pair for `DISPATCH_API_AUTH_KEY` and `DISPATCH_API_SIGN_SECRET`.
+
 ## Bug Fixes
 
 - `DispatchApiClient.create()`: Passing an invalid `start_time` (not a `datetime` or `"NOW"`) previously silently created a dispatch with an epoch timestamp (1970-01-01). It now raises `ValueError` immediately.
