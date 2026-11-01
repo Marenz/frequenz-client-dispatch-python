@@ -42,7 +42,7 @@ dependencies = [
   "frequenz-client-common >= 0.3.8, < 0.4.0",
   "frequenz-core >= 1.0.2, < 2.0.0",
   "grpcio >= 1.80.0, < 2",
-  "python-dateutil >= 2.8.2, < 3.0",
+  "python-dateutil >= 2.8.2, < 4.0",
 ]
 dynamic = ["version"]
 
