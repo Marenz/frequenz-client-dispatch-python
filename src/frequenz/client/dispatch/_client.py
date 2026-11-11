@@ -65,7 +65,7 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         sign_secret: str | None = None,
         connect: bool = True,
         call_timeout: timedelta = timedelta(seconds=60),
-        stream_timeout: timedelta = timedelta(minutes=5),
+        stream_timeout: timedelta | None = None,
     ) -> None:
         """Initialize the client.
 
@@ -80,7 +80,8 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
             sign_secret: Optional secret for signing requests.
             connect: Whether to connect to the service immediately.
             call_timeout: Timeout for gRPC calls, default is 60 seconds.
-            stream_timeout: Timeout for gRPC streams, default is 5 minutes.
+            stream_timeout: Optional timeout for gRPC streams. By default, streams
+                have no deadline and dead connections are detected by gRPC keepalive.
 
         Raises:
             TypeError: If neither `auth_key` nor `key` is provided.
@@ -115,7 +116,9 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         """A dictionary of streamers, keyed by microgrid_id."""
 
         self._call_timeout_seconds = call_timeout.total_seconds()
-        self._stream_timeout_seconds = stream_timeout.total_seconds()
+        self._stream_timeout_seconds = (
+            stream_timeout.total_seconds() if stream_timeout is not None else None
+        )
 
     @property
     def call_timeout(self) -> timedelta:
@@ -123,8 +126,10 @@ class DispatchApiClient(BaseApiClient[dispatch_pb2_grpc.MicrogridDispatchService
         return timedelta(seconds=self._call_timeout_seconds)
 
     @property
-    def stream_timeout(self) -> timedelta:
+    def stream_timeout(self) -> timedelta | None:
         """Get the stream timeout."""
+        if self._stream_timeout_seconds is None:
+            return None
         return timedelta(seconds=self._stream_timeout_seconds)
 
     @property

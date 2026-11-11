@@ -2,12 +2,14 @@
 
 ## Summary
 
-Require `frequenz-client-base` 0.11.3 so configured HTTP/2 keepalive settings
-work, and clarify deprecations in the API reference.
+Dispatch streams now have no deadline by default and rely on gRPC keepalive to
+detect dead connections.
 
 ## Upgrading
 
-<!-- Here goes notes on how to upgrade from previous versions, including deprecations and what they should be replaced with -->
+- `DispatchApiClient` no longer sets a five-minute stream deadline by default.
+  Pass a `timedelta` as `stream_timeout` to keep a finite deadline. The public
+  `stream_timeout` property now returns `None` when no deadline is configured.
 
 ## New Features
 
@@ -15,10 +17,5 @@ work, and clarify deprecations in the API reference.
 
 ## Bug Fixes
 
-- Require `frequenz-client-base` 0.11.3 or newer so gRPC applies the configured
-  HTTP/2 keepalive intervals.
-
-## Documentation
-
-- The API reference now highlights the deprecated `DispatchApiClient` `key`
-  argument and `InverterType.SOLAR` member, including their replacements.
+- Remove the default stream deadline that forced healthy subscriptions to reconnect
+  every five minutes. Explicit stream timeouts remain supported.
